@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": false
+  },
+  "extends": "./tsconfig.json",
+  "include": ["./**/*.ts", "./**/*.js", "./.*.js"],
+  "exclude": ["./dist/**/*"]
+}
