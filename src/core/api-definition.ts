@@ -1,14 +1,12 @@
-import { Constructor } from 'protobufjs';
 import { SchemaBase } from './schemas';
 
-export interface ApiDefinition<
-  Commands extends Record<string, ApiCommandDefinition>
-> {
+export interface ApiDefinition<Commands extends ApiCommandsMap> {
   commands: Commands;
 }
 
-export interface ApiCommandDefinition {
-  id: number;
-  input: Constructor<SchemaBase>;
-  output: Constructor<SchemaBase>;
+export interface ApiCommandSchemas {
+  input: typeof SchemaBase;
+  output: typeof SchemaBase;
 }
+
+export type ApiCommandsMap = { [commandName: string]: ApiCommandSchemas };

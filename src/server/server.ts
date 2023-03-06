@@ -1,12 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { ApiCommandDefinition, ApiDefinition } from '../core/api-definition';
-import { SchemaBase } from '../core/schemas';
+import { Properties } from '../core';
+import { ApiCommandsMap, ApiDefinition } from '../core/api-definition';
+import { decodeCommand, encodeCommand } from '../core/packet-parsers';
+import { InvalidSchemaData } from '../core/schema-errors';
 
 export class ServerApi<
-  Commands extends Record<string, ApiCommandDefinition>,
+  Commands extends ApiCommandsMap,
   Def extends ApiDefinition<Commands> = ApiDefinition<Commands>
 > {
-  static factory<Commands extends Record<string, ApiCommandDefinition>>(
+  static factory<Commands extends ApiCommandsMap>(
     def: ApiDefinition<Commands>
   ): ServerApi<Commands> {
     const instance = new ServerApi<Commands>(def);
@@ -17,14 +19,12 @@ export class ServerApi<
   }
 
   private handlersMap: Map<
-    number,
+    string,
     {
       name: keyof Commands;
       handler: <Name extends keyof Commands = keyof Commands>(
-        data: Omit<Commands[Name]['input']['prototype'], keyof SchemaBase>
-      ) => Promise<
-        Omit<Commands[Name]['output']['prototype'], keyof SchemaBase>
-      >;
+        data: Properties<Commands[Name]['input']['prototype']>
+      ) => Promise<Properties<Commands[Name]['output']['prototype']>>;
     }
   > = new Map();
 
@@ -34,8 +34,8 @@ export class ServerApi<
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
   ) => {
-    const eventId = Number((req.url as string).slice(1));
-    const nameAndHandler = this.handlersMap.get(eventId);
+    const commandName = (req.url as string).slice(1);
+    const nameAndHandler = this.handlersMap.get(commandName);
 
     if (!nameAndHandler) {
       this.dispatch(res, 404, Buffer.from(''));
@@ -46,24 +46,25 @@ export class ServerApi<
 
     const commandConfig = this.def.commands[nameAndHandler.name];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inputSchema = commandConfig.input as any;
-    const inputSchemaObject = inputSchema.decode(buffer);
-    const inputSchemaDecodedData = inputSchema.toObject(inputSchemaObject);
+    const inputDecodedData = decodeCommand(commandConfig.input, buffer);
 
-    const handlerResponseRawData = await nameAndHandler.handler(
-      inputSchemaDecodedData
-    );
+    try {
+      const outputRawData = await nameAndHandler.handler(
+        inputDecodedData as any
+      );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const outputSchema = commandConfig.output as any;
+      const outputBuffer = encodeCommand(commandConfig.output, outputRawData);
 
-    const responseMessage = outputSchema.fromObject(handlerResponseRawData);
-    const responseBuffer = outputSchema.encode(responseMessage).finish();
-
-    res.statusCode = 200;
-    res.write(responseBuffer);
-    res.end();
+      this.dispatch(res, 200, Buffer.from(outputBuffer));
+      // res.statusCode = 200;
+      // res.write(outputBuffer);
+      // res.end();
+    } catch (e) {
+      if (e instanceof InvalidSchemaData) {
+        this.dispatch(res, 400, Buffer.from('outputBuffer'));
+      }
+    } finally {
+    }
   };
 
   private dispatch(
@@ -78,12 +79,10 @@ export class ServerApi<
   handle<Name extends keyof Commands, Command extends Commands[Name]>(
     name: Name,
     handler: (
-      data: Omit<Command['input']['prototype'], keyof SchemaBase>
-    ) => Promise<Omit<Command['output']['prototype'], keyof SchemaBase>>
+      data: Properties<Command['input']['prototype']>
+    ) => Promise<Properties<Command['output']['prototype']>>
   ): void {
-    const commandConfig = this.def.commands[name];
-
-    this.handlersMap.set(commandConfig.id, { name, handler });
+    this.handlersMap.set(name as string, { name, handler });
   }
 
   private async readBuffer(req: IncomingMessage): Promise<Buffer> {

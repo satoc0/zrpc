@@ -18,6 +18,7 @@ export type FieldTypes =
   | 'bool'
   | 'bytes'
   | object;
+
 export type Types =
   | number
   | number[]
@@ -36,3 +37,13 @@ export interface FieldOptions {
   rule?: 'optional' | 'required' | 'repeated';
   defaultValue?: Types;
 }
+
+export type Properties<T> = Omit<
+  Pick<
+    T,
+    {
+      [K in keyof T]: T[K] extends (...args: any[]) => unknown ? never : K;
+    }[keyof T]
+  >,
+  '$type'
+>;

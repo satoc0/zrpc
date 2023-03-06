@@ -1,21 +1,16 @@
-import { NextRestApi } from "../src/next-rest-api"
-import { Field, Schema, SchemaBase } from "../src/core/schemas";
+import { NextRestApi } from '../src/apix';
+import { Field, Schema, SchemaBase } from '../src/core/schemas';
 
-
-
-@Schema("GetAccountCommandInput")
+@Schema('GetAccountCommandInput')
 export class GetAccountCommandInput extends SchemaBase<GetAccountCommandInput> {
   @Field('string')
   public name!: string;
-
 }
 
-@Schema("GetAccountCommandOutput")
+@Schema('GetAccountCommandOutput')
 export class GetAccountCommandOutput extends SchemaBase<GetAccountCommandOutput> {
-
   @Field('string')
   public name!: string;
-
 }
 
 export const api = new NextRestApi({
@@ -23,8 +18,7 @@ export const api = new NextRestApi({
     GetAccountCommand: {
       id: 1,
       input: GetAccountCommandInput,
-      output: GetAccountCommandOutput
-    }
+      output: GetAccountCommandOutput,
+    },
   },
 });
-

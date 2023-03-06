@@ -1,13 +1,15 @@
 import { Field, Schema, SchemaBase } from '../src/core';
+@Schema('BasicSchema')
+class BasicSchema extends SchemaBase<BasicSchema> {
+  @Field('string')
+  stringField!: string;
+
+  @Field('string')
+  stringField2!: string;
+}
 
 it('should encode and decode the schema correctly', () => {
-  @Schema('BasicSchema')
-  class BasicSchema extends SchemaBase<BasicSchema> {
-    @Field('string')
-    stringField!: string;
-  }
-
-  const raw = { stringField: 'raw' };
+  const raw = { stringField: 'raw', stringField2: 'raw2' };
 
   const message = BasicSchema.fromObject(raw);
   const buffer = BasicSchema.encode(message).finish();

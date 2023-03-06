@@ -1,13 +1,14 @@
-import { ApiCommandDefinition, ApiDefinition, SchemaBase } from '../core';
+import { Buffer } from 'buffer';
+import { ApiCommandsMap, ApiDefinition, Properties } from '../core';
+import { decodeCommand, encodeCommand } from '../core/packet-parsers';
 import { ClientConfig } from './client.types';
 export * from './client.types';
-import { Buffer } from 'buffer';
 
 export class ClientApi<
-  Commands extends Record<string, ApiCommandDefinition>,
+  Commands extends ApiCommandsMap,
   Def extends ApiDefinition<Commands> = ApiDefinition<Commands>
 > {
-  static factory<Commands extends Record<string, ApiCommandDefinition>>(
+  static factory<Commands extends ApiCommandsMap>(
     def: ApiDefinition<Commands>,
     config: ClientConfig
   ): ClientApi<Commands> {
@@ -20,15 +21,13 @@ export class ClientApi<
 
   async exec<Name extends keyof Commands, Command extends Commands[Name]>(
     name: Name,
-    input: Omit<Command['input']['prototype'], keyof SchemaBase>
-  ): Promise<Omit<Command['output']['prototype'], keyof SchemaBase>> {
+    input: Properties<Command['input']['prototype']>
+  ): Promise<Properties<Command['output']['prototype']>> {
+    const inputData = { ...input } as any;
     const command = this.def.commands[name];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inputSchema = command.input as any;
-    const inputSchemaMessage = inputSchema.fromObject(input);
-    const inputBuffer = inputSchema.encode(inputSchemaMessage).finish();
+    const inputBuffer = encodeCommand(command.input, inputData);
 
-    const response = await fetch(this.config.url + '/' + command.id, {
+    const response = await fetch(this.config.url + '/' + (name as string), {
       method: 'POST',
       body: inputBuffer,
     });
@@ -36,16 +35,10 @@ export class ClientApi<
     const responseBlob = await response.blob();
     const arrBuffer = await responseBlob.arrayBuffer();
     const outputBuffer = Buffer.from(arrBuffer);
+    const outputDecodedData = decodeCommand(command.output, outputBuffer);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const outputSchema = command.output as any;
-
-    const outputSchemaObject = outputSchema.decode(outputBuffer);
-    const outputDecodedData = outputSchema.toObject(outputSchemaObject);
-
-    return outputDecodedData as unknown as Omit<
-      Command['output']['prototype'],
-      keyof SchemaBase
+    return outputDecodedData as unknown as Properties<
+      Command['output']['prototype']
     >;
   }
 }

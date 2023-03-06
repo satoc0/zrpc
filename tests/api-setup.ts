@@ -18,7 +18,6 @@ class BasicAddOutput extends SchemaBase<BasicAddOutput> {
 export const api = new NextRestApi({
   commands: {
     BasicAdd: {
-      id: 1,
       input: BasicAddInput,
       output: BasicAddOutput,
     },

@@ -1,9 +1,9 @@
 import type { ClientApi, ClientConfig } from './client';
-import { ApiCommandDefinition, ApiDefinition } from './core/api-definition';
+import { ApiCommandSchemas, ApiDefinition } from './core/api-definition';
 import type { ServerApi } from './server';
 
 export class NextRestApi<
-  ApiCommands extends Record<string, ApiCommandDefinition>
+  ApiCommands extends Record<string, ApiCommandSchemas>
 > {
   constructor(private apiDefinition: ApiDefinition<ApiCommands>) {}
 

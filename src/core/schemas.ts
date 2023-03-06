@@ -6,23 +6,37 @@ import {
 } from 'protobufjs/light';
 import { FieldOptions, FieldTypes } from './types';
 
-const lastFieldIdSymbol = Symbol('lastFieldId');
+enum SchemaMetadataField {
+  __packetType,
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export enum PacketType {
+  CommandCommunication = 1,
+}
+
+const autoincrementFieldIdSymbol = Symbol('lastFieldId');
+const startFieldIdOffset = 12;
+
 function getNextFieldId(target: any): number {
-  if (typeof target[lastFieldIdSymbol] === 'undefined') {
-    target[lastFieldIdSymbol] = 0;
+  if (typeof target[autoincrementFieldIdSymbol] === 'undefined') {
+    target[autoincrementFieldIdSymbol] = startFieldIdOffset;
   } else {
-    ++target[lastFieldIdSymbol];
+    ++target[autoincrementFieldIdSymbol];
   }
 
-  return target[lastFieldIdSymbol];
+  return target[autoincrementFieldIdSymbol];
 }
 
 export class SchemaBase<T extends object = object> extends Message<T> {}
 
 export function Schema<T extends SchemaBase<T>>(name: string) {
   return (target: Constructor<T>) => {
+    (target as any).prototype.__packetType = new ProtobufField(
+      '__packetType',
+      SchemaMetadataField.__packetType,
+      'int32'
+    );
+
     return Type.d<T>(name)(target);
   };
 }

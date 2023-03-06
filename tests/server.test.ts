@@ -1,6 +1,10 @@
 import { Server } from 'node:http';
 import { api } from './api-setup';
 
+function randomIntFromInterval(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 it('should handle command', async () => {
   const server = await api.server();
 
@@ -19,9 +23,13 @@ it('should handle command', async () => {
 
   const client = await api.client({ url: `http://localhost:${serverPort}` });
 
-  const left = 1;
-  const right = 2;
+  const left = randomIntFromInterval(0, 50);
+  const right = randomIntFromInterval(0, 50);
   const response = await client.exec('BasicAdd', { left, right });
 
   expect(response.result).toEqual(left + right);
+
+  await new Promise<void>((resolve, reject) =>
+    httpServer.close((err) => (err ? reject(err) : resolve()))
+  );
 });
