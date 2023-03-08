@@ -27,3 +27,15 @@ export function decodeCommand<O extends object>(
   const decodedData = schema.toObject(schemaObject);
   return decodedData as O;
 }
+
+export class ZPacket {
+  constructor(private schema: typeof SchemaBase) {}
+
+  public encode(data: object): Uint8Array {
+    return encodeCommand(this.schema, data);
+  }
+
+  public decode(buffer: Buffer): Uint8Array {
+    return decodeCommand(this.schema, buffer);
+  }
+}

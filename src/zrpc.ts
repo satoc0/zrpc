@@ -2,9 +2,7 @@ import type { ClientApi, ClientConfig } from './client';
 import { ApiCommandSchemas, ApiDefinition } from './core/api-definition';
 import type { ServerApi } from './server';
 
-export class NextRestApi<
-  ApiCommands extends Record<string, ApiCommandSchemas>
-> {
+export class ZRPC<ApiCommands extends Record<string, ApiCommandSchemas>> {
   constructor(private apiDefinition: ApiDefinition<ApiCommands>) {}
 
   async client(config: ClientConfig): Promise<ClientApi<ApiCommands>> {

@@ -47,3 +47,5 @@ export type Properties<T> = Omit<
   >,
   '$type'
 >;
+
+export type AcceptPromise<T> = T | Promise<T>;

@@ -1,11 +1,11 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/index.ts'],
-  // splitting: true,
-  bundle: true,
+  splitting: true,
   sourcemap: true,
   clean: true,
-  platform: 'browser',
+  platform: 'neutral',
+  dts: true,
+  keepNames: true,
 });

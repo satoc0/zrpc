@@ -26,11 +26,21 @@ function getNextFieldId(target: any): number {
 
   return target[autoincrementFieldIdSymbol];
 }
+/**
+ * Prevent registry same schema twice
+ */
+const registeredSchemas: Set<string> = new Set();
 
 export class SchemaBase<T extends object = object> extends Message<T> {}
 
 export function Schema<T extends SchemaBase<T>>(name: string) {
   return (target: Constructor<T>) => {
+    if (registeredSchemas.has(name)) {
+      return;
+    }
+
+    registeredSchemas.add(name);
+
     (target as any).prototype.__packetType = new ProtobufField(
       '__packetType',
       SchemaMetadataField.__packetType,

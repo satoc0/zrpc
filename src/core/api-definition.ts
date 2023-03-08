@@ -1,6 +1,8 @@
 import { SchemaBase } from './schemas';
 
-export interface ApiDefinition<Commands extends ApiCommandsMap> {
+export interface ApiDefinition<
+  Commands extends ApiCommandsMap = ApiCommandsMap
+> {
   commands: Commands;
 }
 

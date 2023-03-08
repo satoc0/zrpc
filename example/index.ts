@@ -1,4 +1,4 @@
-import { NextRestApi } from '../src/apix';
+import { ZRPC } from '../src/zrpc';
 import { Field, Schema, SchemaBase } from '../src/core/schemas';
 
 @Schema('GetAccountCommandInput')
@@ -13,7 +13,7 @@ export class GetAccountCommandOutput extends SchemaBase<GetAccountCommandOutput>
   public name!: string;
 }
 
-export const api = new NextRestApi({
+export const __api__ = new ZRPC({
   commands: {
     GetAccountCommand: {
       id: 1,
@@ -22,3 +22,7 @@ export const api = new NextRestApi({
     },
   },
 });
+
+if (typeof window !== 'undefined') {
+  window.__api__ = __api__;
+}
