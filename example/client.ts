@@ -1,7 +1,7 @@
-import { api } from './index';
+import { __api__ } from './index';
 
 (async () => {
-  const client = await api.client({ url: '' });
+  const client = await __api__.client({ url: 'http://localhost:3000' });
 
   const response = await client.exec('GetAccountCommand', { name: 'foo' });
 

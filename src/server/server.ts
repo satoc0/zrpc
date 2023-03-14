@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { Properties } from '../core';
 import { ApiCommandsMap, ApiDefinition } from '../core/api-definition';
-import { decodeCommand, encodeCommand } from '../core/packet-parsers';
+import { ZCommandData } from '../core/command-data';
 import { InvalidSchemaData } from '../core/schema-errors';
 
 export class ServerApi<
@@ -13,10 +13,10 @@ export class ServerApi<
   ): ServerApi<Commands> {
     const instance = new ServerApi<Commands>(def);
 
-    // await instance.build();
-
     return instance;
   }
+
+  private commands: Map<keyof Commands, ZCommandData> = new Map();
 
   private handlersMap: Map<
     string,
@@ -28,7 +28,13 @@ export class ServerApi<
     }
   > = new Map();
 
-  private constructor(private def: Def) {}
+  private constructor(private def: Def) {
+    this.instantiateCommands();
+  }
+
+  private instantiateCommands() {
+    this.commands = ZCommandData.factoryCommandDataMap(this.def.commands);
+  }
 
   public entry = async (
     req: IncomingMessage,
@@ -44,21 +50,18 @@ export class ServerApi<
 
     const buffer = await this.readBuffer(req);
 
-    const commandConfig = this.def.commands[nameAndHandler.name];
+    const commandData = this.commands.get(commandName) as ZCommandData;
 
-    const inputDecodedData = decodeCommand(commandConfig.input, buffer);
+    const inputDecodedData = commandData.decodeInput(buffer);
 
     try {
       const outputRawData = await nameAndHandler.handler(
         inputDecodedData as any
       );
 
-      const outputBuffer = encodeCommand(commandConfig.output, outputRawData);
+      const outputBuffer = commandData.encodeOutput(outputRawData);
 
       this.dispatch(res, 200, Buffer.from(outputBuffer));
-      // res.statusCode = 200;
-      // res.write(outputBuffer);
-      // res.end();
     } catch (e) {
       if (e instanceof InvalidSchemaData) {
         this.dispatch(res, 400, Buffer.from('outputBuffer'));
