@@ -7,11 +7,11 @@ import {
 import { FieldOptions, FieldTypes } from './types';
 
 enum SchemaMetadataField {
-  __packetType,
+  packetType,
 }
 
 export enum PacketType {
-  CommandCommunication = 1,
+  ProcedureDataCommunication = 1,
 }
 
 const autoincrementFieldIdSymbol = Symbol('lastFieldId');
@@ -26,6 +26,7 @@ function getNextFieldId(target: any): number {
 
   return target[autoincrementFieldIdSymbol];
 }
+
 /**
  * Prevent registry same schema twice
  */
@@ -43,7 +44,7 @@ export function Schema<T extends SchemaBase<T>>(name: string) {
 
     (target as any).prototype.__packetType = new ProtobufField(
       '__packetType',
-      SchemaMetadataField.__packetType,
+      SchemaMetadataField.packetType,
       'int32'
     );
 

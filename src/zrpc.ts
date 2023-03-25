@@ -1,19 +1,12 @@
-import type { ClientApi, ClientConfig } from './client';
-import { ApiCommandSchemas, ApiDefinition } from './core/api-definition';
-import type { ServerApi } from './server';
+import { ApiDefinition, ApiProceduresMap } from './core/api-definition';
+import { ZProceduresDataMap } from './core/procedure-data';
 
-export class ZRPC<ApiCommands extends Record<string, ApiCommandSchemas>> {
-  constructor(private apiDefinition: ApiDefinition<ApiCommands>) {}
+export class ZRPC<ApiProcedures extends ApiProceduresMap = ApiProceduresMap> {
+  public readonly proceduresDataParsers!: ZProceduresDataMap;
 
-  async client(config: ClientConfig): Promise<ClientApi<ApiCommands>> {
-    const { ClientApi } = await import('./client');
-
-    return ClientApi.factory<ApiCommands>(this.apiDefinition, config);
-  }
-
-  async server(): Promise<ServerApi<ApiCommands>> {
-    const { ServerApi } = await import('./server');
-
-    return ServerApi.factory<ApiCommands>(this.apiDefinition);
+  constructor(public readonly apiDefinition: ApiDefinition<ApiProcedures>) {
+    this.proceduresDataParsers = new ZProceduresDataMap(
+      this.apiDefinition.procedures
+    );
   }
 }

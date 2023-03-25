@@ -1,4 +1,4 @@
-import NextRestApi, { Schema, SchemaBase, Field } from '../src';
+import ZRPC, { Schema, SchemaBase, Field } from '../src';
 
 @Schema('BasicAddInput')
 class BasicAddInput extends SchemaBase<BasicAddInput> {
@@ -15,8 +15,8 @@ class BasicAddOutput extends SchemaBase<BasicAddOutput> {
   result!: number;
 }
 
-export const api = new NextRestApi({
-  commands: {
+export const api = new ZRPC({
+  procedures: {
     BasicAdd: {
       input: BasicAddInput,
       output: BasicAddOutput,

@@ -1,85 +1,87 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { Properties } from '../core';
-import { ApiCommandsMap, ApiDefinition } from '../core/api-definition';
-import { ZCommandData } from '../core/command-data';
-import { InvalidSchemaData } from '../core/schema-errors';
+import { ApiProceduresMap } from '../core/api-definition';
+import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
+import { ProcedureNotFound, ZError } from '../core/errors';
+import { ZRPC } from '../zrpc';
 
-export class ServerApi<
-  Commands extends ApiCommandsMap,
-  Def extends ApiDefinition<Commands> = ApiDefinition<Commands>
+type HandlerMap<Procedures extends ApiProceduresMap> = Map<
+  string,
+  {
+    name: keyof Procedures;
+    handler: <Name extends keyof Procedures = keyof Procedures>(
+      data: Properties<Procedures[Name]['input']['prototype']>
+    ) => Promise<Properties<Procedures[Name]['output']['prototype']>>;
+  }
+>;
+
+export class ZServer<
+  ZAPI extends ZRPC,
+  Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  static factory<Commands extends ApiCommandsMap>(
-    def: ApiDefinition<Commands>
-  ): ServerApi<Commands> {
-    const instance = new ServerApi<Commands>(def);
+  private handlersMap: HandlerMap<Procedures> = new Map();
 
-    return instance;
-  }
-
-  private commands: Map<keyof Commands, ZCommandData> = new Map();
-
-  private handlersMap: Map<
-    string,
-    {
-      name: keyof Commands;
-      handler: <Name extends keyof Commands = keyof Commands>(
-        data: Properties<Commands[Name]['input']['prototype']>
-      ) => Promise<Properties<Commands[Name]['output']['prototype']>>;
-    }
-  > = new Map();
-
-  private constructor(private def: Def) {
-    this.instantiateCommands();
-  }
-
-  private instantiateCommands() {
-    this.commands = ZCommandData.factoryCommandDataMap(this.def.commands);
-  }
+  constructor(private def: ZAPI) {}
 
   public entry = async (
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
   ) => {
-    const commandName = (req.url as string).slice(1);
-    const nameAndHandler = this.handlersMap.get(commandName);
+    const procedureName = (req.url as string).slice(1);
+    const nameAndHandler = this.handlersMap.get(procedureName);
 
     if (!nameAndHandler) {
-      this.dispatch(res, 404, Buffer.from(''));
+      this.dispatchError(res, new ProcedureNotFound(procedureName));
       return;
     }
 
     const buffer = await this.readBuffer(req);
-
-    const commandData = this.commands.get(commandName) as ZCommandData;
-
-    const inputDecodedData = commandData.decodeInput(buffer);
+    const procedureData = this.def.proceduresDataParsers.get(procedureName);
+    const inputDecodedData = procedureData.input.decode(buffer);
 
     try {
       const outputRawData = await nameAndHandler.handler(
         inputDecodedData as any
       );
 
-      const outputBuffer = commandData.encodeOutput(outputRawData);
+      const outputBuffer = procedureData.output.encode(outputRawData);
 
       this.dispatch(res, 200, Buffer.from(outputBuffer));
     } catch (e) {
-      if (e instanceof InvalidSchemaData) {
-        this.dispatch(res, 400, Buffer.from('outputBuffer'));
-      }
+      this.dispatchError(res, e as Error);
     } finally {
     }
   };
+
+  private dispatchError(res: ServerResponse<IncomingMessage>, e: Error) {
+    if (e instanceof ZError) {
+      this.dispatchZError(res, e);
+    } else {
+      this.dispatchUnknownError(res, e);
+    }
+  }
+
+  private dispatchZError(res: ServerResponse<IncomingMessage>, error: ZError) {
+    this.dispatch(res, 400, Buffer.from(error.getResponseBuffer()));
+  }
+
+  private dispatchUnknownError(res: ServerResponse<IncomingMessage>, e: Error) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ message: e.message, name: e.name }), 'utf8');
+  }
 
   private dispatch(
     res: ServerResponse<IncomingMessage>,
     statusCode: number,
     data: Buffer
   ) {
+    res.setHeader('Content-Type', PROTOBUF_CONTENT_TYPE);
     res.statusCode = statusCode;
     res.end(data, 'binary');
   }
 
-  handle<Name extends keyof Commands, Command extends Commands[Name]>(
+  handle<Name extends keyof Procedures, Command extends Procedures[Name]>(
     name: Name,
     handler: (
       data: Properties<Command['input']['prototype']>

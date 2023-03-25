@@ -1,14 +1,14 @@
 import { SchemaBase } from './schemas';
 
 export interface ApiDefinition<
-  Commands extends ApiCommandsMap = ApiCommandsMap
+  Procedures extends ApiProceduresMap = ApiProceduresMap
 > {
-  commands: Commands;
+  procedures: Procedures;
 }
 
-export interface ApiCommandSchemas {
+export interface ApiProceduresSchemas {
   input: typeof SchemaBase;
   output: typeof SchemaBase;
 }
 
-export type ApiCommandsMap = { [commandName: string]: ApiCommandSchemas };
+export type ApiProceduresMap = { [commandName: string]: ApiProceduresSchemas };

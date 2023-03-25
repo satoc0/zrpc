@@ -13,16 +13,11 @@ export class GetAccountCommandOutput extends SchemaBase<GetAccountCommandOutput>
   public name!: string;
 }
 
-export const __api__ = new ZRPC({
-  commands: {
+export const api = new ZRPC({
+  procedures: {
     GetAccountCommand: {
-      id: 1,
       input: GetAccountCommandInput,
       output: GetAccountCommandOutput,
     },
   },
 });
-
-if (typeof window !== 'undefined') {
-  window.__api__ = __api__;
-}

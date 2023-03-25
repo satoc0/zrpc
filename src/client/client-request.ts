@@ -1,20 +1,25 @@
-import { ZCommandData } from '../core/command-data';
+import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
+import { ZProcedureData } from '../core/procedure-data';
 
 export class ZClientRequest {
   private static requiredHeaders: HeadersInit = {
-    'content-type': 'application/protobuf',
+    'content-type': PROTOBUF_CONTENT_TYPE,
+    accept: `${PROTOBUF_CONTENT_TYPE}, application/json`,
   };
 
-  constructor(private commandData: ZCommandData, private rawInput: object) {}
+  constructor(
+    private procedureData: ZProcedureData,
+    private rawInput: object
+  ) {}
 
   async fetch(baseRrl: string, requestBase?: RequestInit): Promise<object> {
     const headers: HeadersInit = this.buildRequestHeaders(requestBase);
 
-    const response = await fetch(baseRrl + '/' + this.commandData.name, {
+    const response = await fetch(baseRrl + '/' + this.procedureData.name, {
       ...requestBase,
       headers,
       method: 'POST',
-      body: this.commandData.encodeInput(this.rawInput),
+      body: this.procedureData.input.encode(this.rawInput),
     });
 
     return this.handleResponse(response);
@@ -40,14 +45,27 @@ export class ZClientRequest {
   }
 
   private handleResponse(response: Response): Promise<object> {
-    return this.decodeResponse(response);
+    const responseType = response.headers.get('content-type');
+
+    if (!responseType) {
+      throw new Error('Response content-type not specified');
+    }
+
+    switch (responseType) {
+      case 'application/json':
+        return response.json();
+      case PROTOBUF_CONTENT_TYPE:
+        return this.decodeResponse(response);
+      default:
+        throw new Error('Unhandled response content-type');
+    }
   }
 
   private async decodeResponse(response: Response): Promise<object> {
     const responseBlob = await response.blob();
     const arrBuffer = await responseBlob.arrayBuffer();
     const outputBuffer = Buffer.from(arrBuffer);
-    const outputDecodedData = this.commandData.decodeOutput(outputBuffer);
+    const outputDecodedData = this.procedureData.output.decode(outputBuffer);
 
     return outputDecodedData;
   }

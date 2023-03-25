@@ -1,19 +1,18 @@
 import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
-import { ClientApi } from '../src';
-import { ServerApi } from '../src/server';
+import { ZClient, ZServer } from '../src';
 import { api } from './api-setup';
 
 function randomIntFromInterval(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-let client: ClientApi<any, any>;
-let server: ServerApi<any, any>;
+let client: ZClient<any, any>;
+let server: ZServer<any, any>;
 let httpServer: Server;
 
 beforeEach(async () => {
-  server = await api.server();
+  server = new ZServer(api);
   httpServer = new Server();
 
   await new Promise<void>((resolve) =>
@@ -25,7 +24,7 @@ beforeEach(async () => {
   const addr = httpServer.address() as AddressInfo;
   const serverPort = addr.port;
 
-  client = await api.client({ url: `http://localhost:${serverPort}` });
+  client = new ZClient(api, { url: `http://localhost:${serverPort}` });
 });
 
 afterEach(async () => {

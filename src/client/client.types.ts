@@ -1,6 +1,9 @@
 import { AcceptPromise } from '../core';
 
 export interface ClientConfig {
-  url: string;
+  /**
+   * Defaults to window.location.origin
+   */
+  url?: string;
   requestBuilder?: () => AcceptPromise<RequestInit>;
 }

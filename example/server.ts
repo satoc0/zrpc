@@ -1,10 +1,12 @@
 import { Server } from 'http';
-import { __api__ } from './index';
+import { api } from './index';
+import { ZServer } from '../src';
 
 (async () => {
-  const server = await __api__.server();
+  const server = new ZServer(api);
+
   server.handle('GetAccountCommand', async (_data) => {
-    console.log({ _data });
+    console.log({ _data, d: _data.name });
 
     return { name: '2' };
   });

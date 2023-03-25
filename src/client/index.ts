@@ -1,1 +1,2 @@
-export * from './client-api';
+export * from './client';
+export * from './client.types';

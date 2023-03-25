@@ -1,7 +1,8 @@
-import { __api__ } from './index';
+import { ZClient } from '../src';
+import { api } from './index';
 
 (async () => {
-  const client = await __api__.client({ url: 'http://localhost:3000' });
+  const client = new ZClient(api, { url: 'http://localhost:3000' });
 
   const response = await client.exec('GetAccountCommand', { name: 'foo' });
 
