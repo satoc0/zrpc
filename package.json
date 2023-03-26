@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
-    "dev": "tsup index.ts --watch --onSuccess 'node dist/index.js'",
+    "dev": "tsup src/index.ts --watch --onSuccess 'node dist/index.js'",
     "build": "tsup src/index.ts",
     "example": "tsup example/server.ts --platform node --watch -d \"example/dist\" --clean false --onSuccess 'node example/dist/server.js' & tsup example/client.ts -d \"example/dist\" --clean false --platform browser --watch 'example/**/*' --onSuccess 'http-server ./example' --format iife"
   },

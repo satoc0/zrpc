@@ -1,6 +1,10 @@
 import { Buffer } from 'buffer';
 import { ApiProceduresMap, ApiProceduresSchemas } from './api-definition';
-import { InvalidSchemaData, ProcedureParserNotFound } from './errors';
+import {
+  InvalidSchemaData,
+  ParserDataError,
+  ProcedureParserNotFound,
+} from './core-errors';
 import { PacketType, SchemaBase } from './schemas';
 import { Properties } from './types';
 
@@ -31,14 +35,32 @@ export function decodeCommand<O extends object>(
 }
 
 export class ZProcedureDataSchemaParser {
-  constructor(private schema: typeof SchemaBase) {}
+  constructor(private name: string, private schema: typeof SchemaBase) {}
 
   public encode(data: object): Uint8Array {
-    return encodeCommand(this.schema, data);
+    try {
+      const result = encodeCommand(this.schema, data);
+      return result;
+    } catch (e) {
+      this.throwError(e as Error, 'Encode', data);
+    }
   }
 
-  public decode(buffer: Buffer): Uint8Array {
-    return decodeCommand(this.schema, buffer);
+  public decode(buffer: Buffer): object {
+    try {
+      const result = decodeCommand(this.schema, buffer);
+      return result;
+    } catch (e) {
+      this.throwError(e as Error, 'Decode', buffer);
+    }
+  }
+
+  private throwError(
+    e: Error,
+    _process: 'Encode' | 'Decode',
+    data: unknown
+  ): never {
+    throw new ParserDataError(this.name, _process, e.name, e.message, data);
   }
 }
 
@@ -46,23 +68,19 @@ export class ZProcedureDataSchemaParser {
  * This class has the responsability to create procedure data parsers
  * encoders and decoders
  */
-export class ZProcedureData {
+export class ZProcedureDataParser {
   public readonly input!: ZProcedureDataSchemaParser;
 
   public readonly output!: ZProcedureDataSchemaParser;
 
-  constructor(private _name: string, private schemas: ApiProceduresSchemas) {
-    this.input = new ZProcedureDataSchemaParser(schemas.input);
-    this.output = new ZProcedureDataSchemaParser(schemas.output);
-  }
-
-  get name(): string {
-    return this._name;
+  constructor(public readonly name: string, schemas: ApiProceduresSchemas) {
+    this.input = new ZProcedureDataSchemaParser(name, schemas.input);
+    this.output = new ZProcedureDataSchemaParser(name, schemas.output);
   }
 }
 
-export class ZProceduresDataMap {
-  private map: Map<string, ZProcedureData> = new Map();
+export class ZProceduresDataParsers {
+  private map: Map<string, ZProcedureDataParser> = new Map();
 
   constructor(private proceduresMap: ApiProceduresMap) {
     this.buildMap();
@@ -70,12 +88,15 @@ export class ZProceduresDataMap {
 
   private buildMap() {
     Object.entries(this.proceduresMap).forEach(([commandName, schemas]) => {
-      const procedureDataInstance = new ZProcedureData(commandName, schemas);
+      const procedureDataInstance = new ZProcedureDataParser(
+        commandName,
+        schemas
+      );
       this.map.set(commandName, procedureDataInstance);
     });
   }
 
-  public get(name: string): ZProcedureData {
+  public get(name: string): ZProcedureDataParser {
     const item = this.map.get(name);
 
     if (!item) {

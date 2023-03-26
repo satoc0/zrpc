@@ -1,5 +1,6 @@
 import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
-import { ZProcedureData } from '../core/procedure-data';
+import { ZProcedureDataParser } from '../core/procedure-data';
+import { Buffer } from 'buffer';
 
 export class ZClientRequest {
   private static requiredHeaders: HeadersInit = {
@@ -8,7 +9,7 @@ export class ZClientRequest {
   };
 
   constructor(
-    private procedureData: ZProcedureData,
+    private procedureData: ZProcedureDataParser,
     private rawInput: object
   ) {}
 
@@ -62,8 +63,7 @@ export class ZClientRequest {
   }
 
   private async decodeResponse(response: Response): Promise<object> {
-    const responseBlob = await response.blob();
-    const arrBuffer = await responseBlob.arrayBuffer();
+    const arrBuffer = await response.arrayBuffer();
     const outputBuffer = Buffer.from(arrBuffer);
     const outputDecodedData = this.procedureData.output.decode(outputBuffer);
 

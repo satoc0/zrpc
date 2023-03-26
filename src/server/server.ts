@@ -2,24 +2,18 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { Properties } from '../core';
 import { ApiProceduresMap } from '../core/api-definition';
 import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
-import { ProcedureNotFound, ZError } from '../core/errors';
+import { ProcedureNotFound, ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
+import { ProcedureHandler } from './procedure-handler';
+import { BodyReadError } from './server-errors';
 
-type HandlerMap<Procedures extends ApiProceduresMap> = Map<
-  string,
-  {
-    name: keyof Procedures;
-    handler: <Name extends keyof Procedures = keyof Procedures>(
-      data: Properties<Procedures[Name]['input']['prototype']>
-    ) => Promise<Properties<Procedures[Name]['output']['prototype']>>;
-  }
->;
+type HandlerMap = Map<string, ProcedureHandler>;
 
 export class ZServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  private handlersMap: HandlerMap<Procedures> = new Map();
+  private handlersMap: HandlerMap = new Map();
 
   constructor(private def: ZAPI) {}
 
@@ -27,29 +21,23 @@ export class ZServer<
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
   ) => {
-    const procedureName = (req.url as string).slice(1);
-    const nameAndHandler = this.handlersMap.get(procedureName);
-
-    if (!nameAndHandler) {
-      this.dispatchError(res, new ProcedureNotFound(procedureName));
-      return;
-    }
-
-    const buffer = await this.readBuffer(req);
-    const procedureData = this.def.proceduresDataParsers.get(procedureName);
-    const inputDecodedData = procedureData.input.decode(buffer);
-
     try {
-      const outputRawData = await nameAndHandler.handler(
-        inputDecodedData as any
-      );
+      const procedureName = (req.url as string).slice(1);
+      const handler = this.handlersMap.get(procedureName);
 
-      const outputBuffer = procedureData.output.encode(outputRawData);
+      if (!handler) {
+        throw new ProcedureNotFound(procedureName);
+      }
+
+      const buffer = await this.readBuffer(req);
+      const procedureData = this.def.proceduresDataParsers.get(procedureName);
+      const inputDecodedData = procedureData.input.decode(buffer);
+      const handlerResult = await handler.run(inputDecodedData);
+      const outputBuffer = procedureData.output.encode(handlerResult);
 
       this.dispatch(res, 200, Buffer.from(outputBuffer));
     } catch (e) {
       this.dispatchError(res, e as Error);
-    } finally {
     }
   };
 
@@ -87,7 +75,9 @@ export class ZServer<
       data: Properties<Command['input']['prototype']>
     ) => Promise<Properties<Command['output']['prototype']>>
   ): void {
-    this.handlersMap.set(name as string, { name, handler });
+    const procedureHandler = new ProcedureHandler(name as string, handler);
+
+    this.handlersMap.set(name as string, procedureHandler);
   }
 
   private async readBuffer(req: IncomingMessage): Promise<Buffer> {
@@ -103,7 +93,7 @@ export class ZServer<
       });
 
       req.on('error', (err) => {
-        reject(err);
+        reject(new BodyReadError(`${err.name}: ${err.message}`));
       });
     });
   }

@@ -33,14 +33,30 @@ export abstract class ZError extends Error {
 
 export class InvalidSchemaData extends ZError {
   constructor(public readonly procedureName: string) {
-    super('invalid-schema-error', 'Invalid schema: ' + procedureName, '');
+    super('invalid-schema', 'Invalid schema: ' + procedureName, '');
+  }
+}
+
+export class ParserDataError extends ZError {
+  constructor(
+    public readonly procedureName: string,
+    process: 'Encode' | 'Decode',
+    name: string,
+    message: string,
+    data: unknown
+  ) {
+    super(
+      'parser-' + process.toLocaleLowerCase(),
+      `Procedure: ${procedureName};\nError: ${name};\n${message};\nData: ${data}`,
+      ''
+    );
   }
 }
 
 export class ProcedureParserNotFound extends ZError {
   constructor(public readonly procedureName: string) {
     super(
-      'parser-error',
+      'parser-not-found',
       'Procedure parser not found for: ' + procedureName,
       ''
     );
@@ -49,6 +65,10 @@ export class ProcedureParserNotFound extends ZError {
 
 export class ProcedureNotFound extends ZError {
   constructor(public readonly procedureName: string) {
-    super('procedure-not-error', 'Procedure not found: ' + procedureName, '');
+    super(
+      'procedure-not-found',
+      'Procedure handler not found: ' + procedureName,
+      ''
+    );
   }
 }
