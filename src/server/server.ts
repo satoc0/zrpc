@@ -45,15 +45,18 @@ export class ZServer<
     if (e instanceof ZError) {
       this.dispatchZError(res, e);
     } else {
-      this.dispatchUnknownError(res, e);
+      this.dispatchStandardError(res, e);
     }
   }
 
   private dispatchZError(res: ServerResponse<IncomingMessage>, error: ZError) {
-    this.dispatch(res, 400, Buffer.from(error.getResponseBuffer()));
+    this.dispatch(res, 500, Buffer.from(error.getResponseBuffer()));
   }
 
-  private dispatchUnknownError(res: ServerResponse<IncomingMessage>, e: Error) {
+  private dispatchStandardError(
+    res: ServerResponse<IncomingMessage>,
+    e: Error
+  ) {
     res.statusCode = 500;
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ message: e.message, name: e.name }), 'utf8');

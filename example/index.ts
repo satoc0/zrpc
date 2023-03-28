@@ -14,6 +14,16 @@ export class GetAccountCommandOutput extends SchemaBase<GetAccountCommandOutput>
 }
 
 export const api = new ZRPC({
+  proceduresJSON: {
+    getAccount: {
+      input: {
+        square: 'int32',
+      },
+      output: {
+        square: 'int32',
+      },
+    },
+  },
   procedures: {
     GetAccountCommand: {
       input: GetAccountCommandInput,

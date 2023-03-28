@@ -1,8 +1,10 @@
 import { SchemaBase } from './schemas';
+import { FieldTypesPrimitive } from './types';
 
 export interface ApiDefinition<
   Procedures extends ApiProceduresMap = ApiProceduresMap
 > {
+  proceduresJSON: Procedures;
   procedures: Procedures;
 }
 
@@ -11,4 +13,17 @@ export interface ApiProceduresSchemas {
   output: typeof SchemaBase;
 }
 
-export type ApiProceduresMap = { [commandName: string]: ApiProceduresSchemas };
+export interface ApiProceduresSchemaJSON {
+  input: SchemaDefinition;
+  output: SchemaDefinition;
+}
+
+export type SchemaTypes = FieldTypesPrimitive | SchemaDefinition;
+
+export type SchemaDefinition = {
+  [keyName in string]: SchemaTypes;
+};
+
+export type ApiProceduresMap = {
+  [commandName: string]: ApiProceduresSchemas | ApiProceduresSchemaJSON;
+};

@@ -19,6 +19,40 @@ export type FieldTypes =
   | 'bytes'
   | object;
 
+export type FieldTypesPrimitive =
+  | 'double'
+  | 'double?'
+  | 'float'
+  | 'float?'
+  | 'int32'
+  | 'int32?'
+  | 'uint32'
+  | 'uint32?'
+  | 'sint32'
+  | 'sint32?'
+  | 'fixed32'
+  | 'fixed32?'
+  | 'sfixed32'
+  | 'sfixed32?'
+  | 'int64'
+  | 'int64?'
+  | 'uint64'
+  | 'uint64?'
+  | 'sint64'
+  | 'sint64?'
+  | 'fixed64'
+  | 'fixed64?'
+  | 'sfixed64'
+  | 'sfixed64?'
+  | 'string'
+  | 'string?'
+  | 'bool'
+  | 'bool?'
+  | 'bytes'
+  | 'bytes?';
+
+export type FieldTypesNesting = FieldTypesPrimitive | object;
+
 export type Types =
   | number
   | number[]

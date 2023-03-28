@@ -90,7 +90,7 @@ export class ZProceduresDataParsers {
     Object.entries(this.proceduresMap).forEach(([commandName, schemas]) => {
       const procedureDataInstance = new ZProcedureDataParser(
         commandName,
-        schemas
+        schemas as ApiProceduresSchemas
       );
       this.map.set(commandName, procedureDataInstance);
     });
