@@ -15,7 +15,9 @@ import { PacketType, SchemaBase } from './schemas';
 import { rootConstructor } from './type-constructor';
 import { Properties } from './types';
 
-export function encodeCommand<
+type Side = 'input' | 'output';
+
+export function encodeByClassSchema<
   Schema extends typeof SchemaBase,
   Data = Properties<Schema>
 >(schema: typeof SchemaBase, data: Data): Uint8Array {
@@ -32,7 +34,7 @@ export function encodeCommand<
   return schema.encode(inputSchemaMessage).finish();
 }
 
-export function decodeCommand<O extends object>(
+export function decodeByClassSchema<O extends object>(
   schema: typeof SchemaBase,
   buffer: Buffer
 ): O {
@@ -60,7 +62,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
   private schema!: Type;
 
   constructor(
-    side: 'input' | 'output',
+    side: Side,
     protected name: string,
     schemaDefinition: SchemaDefinition
   ) {
@@ -91,7 +93,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
 
 export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
   constructor(
-    side: 'input' | 'output',
+    side: Side,
     protected name: string,
     private schema: typeof SchemaBase
   ) {
@@ -100,7 +102,7 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
 
   public encode(data: object): Uint8Array {
     try {
-      const result = encodeCommand(this.schema, data);
+      const result = encodeByClassSchema(this.schema, data);
       return result;
     } catch (e) {
       this.throwError(e as Error, 'Encode', data);
@@ -109,7 +111,7 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
 
   public decode(buffer: Buffer): object {
     try {
-      const result = decodeCommand(this.schema, buffer);
+      const result = decodeByClassSchema(this.schema, buffer);
       return result;
     } catch (e) {
       this.throwError(e as Error, 'Decode', buffer);
@@ -136,21 +138,17 @@ export class ZProcedureDataParser {
   }
 
   private createSchemaParserInstance(
-    side: 'input' | 'output',
+    side: Side,
     name: string,
     schema: SchemaDef
   ): ZProcedureDataParserSchema {
     return schema.constructor.name === 'Object'
       ? new ZProcedureDataSchemaDefinitionParser(
-          'output',
+          side,
           name,
           schema as SchemaDefinition
         )
-      : new ZProcedureDataSchemaParser(
-          'output',
-          name,
-          schema as typeof SchemaBase
-        );
+      : new ZProcedureDataSchemaParser(side, name, schema as typeof SchemaBase);
   }
 }
 

@@ -1,4 +1,4 @@
-import { encodeCommand } from './procedure-data';
+import { encodeByClassSchema } from './procedure-data';
 import { Field, Schema, SchemaBase } from './schemas';
 
 @Schema('z-error-data')
@@ -15,7 +15,7 @@ export class ZErrorData extends SchemaBase {
 
 export abstract class ZError extends Error {
   getResponseBuffer(): Uint8Array {
-    return encodeCommand(ZErrorData, {
+    return encodeByClassSchema(ZErrorData, {
       errorCode: this.errorCode,
       message: this.message,
       auxData: this.auxData,
