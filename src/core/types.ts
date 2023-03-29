@@ -1,6 +1,5 @@
 import { Long } from 'protobufjs/light';
 import { SchemaDef, SchemaTypes } from './api-definition';
-import { SchemaBase } from './schemas';
 export type ValueOf<T> = T[keyof T];
 
 export type ProtobufFieldTypes =
