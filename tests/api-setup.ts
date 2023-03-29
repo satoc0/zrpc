@@ -21,5 +21,14 @@ export const api = new ZRPC({
       input: BasicAddInput,
       output: BasicAddOutput,
     },
+    BasicAddJSON: {
+      input: {
+        left: 'int32',
+        right: 'int32',
+      },
+      output: {
+        result: 'int32',
+      },
+    },
   },
 });

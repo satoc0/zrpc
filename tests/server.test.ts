@@ -34,7 +34,7 @@ afterEach(async () => {
 });
 
 it('should handle command', async () => {
-  server.handle('BasicAdd', async ({ left, right }) => {
+  server.handle('BasicAddJSON', async ({ left, right }) => {
     return { result: left + right };
   });
 
@@ -42,7 +42,7 @@ it('should handle command', async () => {
 
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
-  const response = await client.exec('BasicAdd', { left, right });
+  const response = await client.exec('BasicAddJSON', { left, right });
 
   expect(response.result).toEqual(left + right);
 });

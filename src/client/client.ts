@@ -1,4 +1,4 @@
-import { ApiProceduresMap, Properties } from '../core';
+import { ApiProceduresMap, Properties, SchemaDefToType } from '../core';
 import { ZRPC } from '../zrpc';
 import { ZClientRequest } from './client-request';
 import { ClientConfig } from './client.types';
@@ -9,10 +9,12 @@ export class ZClient<
 > {
   constructor(private def: ZAPI, private config?: ClientConfig) {}
 
-  async exec<Name extends keyof Procedures, Procedure extends Procedures[Name]>(
-    name: Name,
-    input: Properties<Procedure['input']['prototype']>
-  ): Promise<Properties<Procedure['output']['prototype']>> {
+  async exec<
+    Name extends keyof Procedures,
+    Procedure extends Procedures[Name],
+    I = SchemaDefToType<Procedure['input']>,
+    O = SchemaDefToType<Procedure['output']>
+  >(name: Name, input: Properties<I>): Promise<O> {
     const procedureData = this.def.proceduresDataParsers.get(name as string);
 
     const clientRequest = new ZClientRequest(procedureData, input);
@@ -23,7 +25,7 @@ export class ZClient<
 
     const response = await clientRequest.fetch(this.getBaseUrl(), requestBase);
 
-    return response as Properties<Procedure['output']['prototype']>;
+    return response as O;
   }
 
   private getBaseUrl(): string {

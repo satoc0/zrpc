@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { Properties } from '../core';
+import { SchemaDefToType } from '../core';
 import { ApiProceduresMap } from '../core/api-definition';
 import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
 import { ProcedureNotFound, ZError } from '../core/core-errors';
@@ -7,7 +7,7 @@ import { ZRPC } from '../zrpc';
 import { ProcedureHandler } from './procedure-handler';
 import { BodyReadError } from './server-errors';
 
-type HandlerMap = Map<string, ProcedureHandler>;
+type HandlerMap = Map<string, ProcedureHandler<any, any>>;
 
 export class ZServer<
   ZAPI extends ZRPC,
@@ -72,15 +72,20 @@ export class ZServer<
     res.end(data, 'binary');
   }
 
-  handle<Name extends keyof Procedures, Command extends Procedures[Name]>(
+  handle<Name extends keyof Procedures, Procedure extends Procedures[Name]>(
     name: Name,
     handler: (
-      data: Properties<Command['input']['prototype']>
-    ) => Promise<Properties<Command['output']['prototype']>>
-  ): void {
-    const procedureHandler = new ProcedureHandler(name as string, handler);
+      data: SchemaDefToType<Procedure['input']>
+    ) => Promise<SchemaDefToType<Procedure['output']>>
+  ): ZServer<ZAPI, Procedures> {
+    const procedureHandler = new ProcedureHandler(
+      name as string,
+      handler as any
+    );
 
     this.handlersMap.set(name as string, procedureHandler);
+
+    return this;
   }
 
   private async readBuffer(req: IncomingMessage): Promise<Buffer> {

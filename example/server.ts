@@ -5,11 +5,13 @@ import { ZServer } from '../src';
 (async () => {
   const server = new ZServer(api);
 
-  server.handle('GetAccountCommand', async (_data) => {
-    console.log({ _data, d: _data.name });
-
-    return { name: '2' };
-  });
+  server
+    .handle('getAccount', async ({ square }) => {
+      return { square: square ^ 2, s: '' };
+    })
+    .handle('GetAccountCommand', async (i) => {
+      return { name: i.name };
+    });
 
   const httpServer = new Server(server.entry);
   const serverPort = 3000;

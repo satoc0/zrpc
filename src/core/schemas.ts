@@ -4,18 +4,14 @@ import {
   Message,
   Type,
 } from 'protobufjs/light';
-import { FieldOptions, FieldTypes } from './types';
-
-enum SchemaMetadataField {
-  packetType,
-}
+import { FieldOptions, ProtobufFieldTypes } from './types';
 
 export enum PacketType {
   ProcedureDataCommunication = 1,
 }
 
 const autoincrementFieldIdSymbol = Symbol('lastFieldId');
-const startFieldIdOffset = 12;
+const startFieldIdOffset = 0;
 
 function getNextFieldId(target: any): number {
   if (typeof target[autoincrementFieldIdSymbol] === 'undefined') {
@@ -42,18 +38,12 @@ export function Schema<T extends SchemaBase<T>>(name: string) {
 
     registeredSchemas.add(name);
 
-    (target as any).prototype.__packetType = new ProtobufField(
-      '__packetType',
-      SchemaMetadataField.packetType,
-      'int32'
-    );
-
     return Type.d<T>(name)(target);
   };
 }
 
 export const Field =
-  (fieldType: FieldTypes | typeof Message, options?: FieldOptions) =>
+  (fieldType: ProtobufFieldTypes | typeof Message, options?: FieldOptions) =>
   (target: object, propertyKey: string) => {
     const fieldId = getNextFieldId(target.constructor);
 
@@ -79,7 +69,7 @@ export const Nested =
   };
 
 export const FieldArray =
-  (fieldType: FieldTypes, options?: Omit<FieldOptions, 'rule'>) =>
+  (fieldType: ProtobufFieldTypes, options?: Omit<FieldOptions, 'rule'>) =>
   (target: object, propertyKey: string) => {
     const fieldId = getNextFieldId(target.constructor);
 

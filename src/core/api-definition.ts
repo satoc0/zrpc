@@ -1,29 +1,35 @@
 import { SchemaBase } from './schemas';
-import { FieldTypesPrimitive } from './types';
+import { ProtobufTypesWithOptional } from './types';
 
 export interface ApiDefinition<
   Procedures extends ApiProceduresMap = ApiProceduresMap
 > {
-  proceduresJSON: Procedures;
   procedures: Procedures;
 }
 
-export interface ApiProceduresSchemas {
+export type ApiProceduresSchemas = {
+  input: SchemaDef;
+  output: SchemaDef;
+};
+
+export interface ApiProceduresSchemasDecorators {
   input: typeof SchemaBase;
   output: typeof SchemaBase;
 }
+
+export type SchemaDef = typeof SchemaBase | SchemaDefinition;
 
 export interface ApiProceduresSchemaJSON {
   input: SchemaDefinition;
   output: SchemaDefinition;
 }
 
-export type SchemaTypes = FieldTypesPrimitive | SchemaDefinition;
+export type SchemaTypes = ProtobufTypesWithOptional | SchemaDefinition;
 
 export type SchemaDefinition = {
   [keyName in string]: SchemaTypes;
 };
 
 export type ApiProceduresMap = {
-  [commandName: string]: ApiProceduresSchemas | ApiProceduresSchemaJSON;
+  [commandName: string]: ApiProceduresSchemas;
 };

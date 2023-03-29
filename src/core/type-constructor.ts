@@ -1,6 +1,6 @@
 import { Field, Type } from 'protobufjs/light';
 import { SchemaDefinition, SchemaTypes } from './api-definition';
-import { FieldTypesPrimitive } from './types';
+import { ProtobufTypesWithOptional } from './types';
 
 function fieldConstructor(
   name: string,
@@ -9,7 +9,9 @@ function fieldConstructor(
   rootType: Type
 ): Field {
   if (typeof schema === 'string') {
-    const isOptional: boolean = (schema as FieldTypesPrimitive).endsWith('?');
+    const isOptional: boolean = (schema as ProtobufTypesWithOptional).endsWith(
+      '?'
+    );
 
     const typeName = isOptional ? schema.slice(0, -1) : schema;
     const field = new Field(name, fieldId as number, typeName, {
@@ -19,21 +21,21 @@ function fieldConstructor(
     return field;
   }
 
-  const typeroot = new Type(name + '_type');
+  const typeRoot = new Type(name + '_type');
 
   let fFieldId = 0;
 
   for (const fieldName in schema) {
     const fSchema = schema[fieldName];
-    const field = fieldConstructor(fieldName, fSchema, fFieldId, typeroot);
+    const field = fieldConstructor(fieldName, fSchema, fFieldId, typeRoot);
 
-    typeroot.add(field);
+    typeRoot.add(field);
 
     ++fFieldId;
   }
-  rootType.add(typeroot);
+  rootType.add(typeRoot);
 
-  const rightField = new Field(name, fieldId, typeroot.name);
+  const rightField = new Field(name, fieldId, typeRoot.name);
   return rightField;
 }
 

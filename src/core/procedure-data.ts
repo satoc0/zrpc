@@ -1,11 +1,18 @@
 import { Buffer } from 'buffer';
-import { ApiProceduresMap, ApiProceduresSchemas } from './api-definition';
+import { Type } from 'protobufjs';
+import {
+  ApiProceduresMap,
+  ApiProceduresSchemas,
+  SchemaDef,
+  SchemaDefinition,
+} from './api-definition';
 import {
   InvalidSchemaData,
   ParserDataError,
   ProcedureParserNotFound,
 } from './core-errors';
 import { PacketType, SchemaBase } from './schemas';
+import { rootConstructor } from './type-constructor';
 import { Properties } from './types';
 
 export function encodeCommand<
@@ -34,8 +41,62 @@ export function decodeCommand<O extends object>(
   return decodedData as O;
 }
 
-export class ZProcedureDataSchemaParser {
-  constructor(private name: string, private schema: typeof SchemaBase) {}
+abstract class ZProcedureDataParserSchema {
+  protected name!: string;
+
+  protected throwError(
+    e: Error,
+    _process: 'Encode' | 'Decode',
+    data: unknown
+  ): never {
+    throw new ParserDataError(this.name, _process, e.name, e.message, data);
+  }
+
+  abstract encode(data: object): Uint8Array;
+  abstract decode(buffer: Buffer): object;
+}
+
+export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSchema {
+  private schema!: Type;
+
+  constructor(
+    side: 'input' | 'output',
+    protected name: string,
+    schemaDefinition: SchemaDefinition
+  ) {
+    super();
+
+    this.schema = rootConstructor(side, schemaDefinition);
+  }
+
+  public encode(data: object): Uint8Array {
+    try {
+      const message = this.schema.create(data);
+      const buffer = this.schema.encode(message).finish();
+      return buffer;
+    } catch (e) {
+      this.throwError(e as Error, 'Encode', data);
+    }
+  }
+
+  public decode(buffer: Buffer): object {
+    try {
+      const message = this.schema.decode(buffer);
+      return message.toJSON();
+    } catch (e) {
+      this.throwError(e as Error, 'Decode', buffer);
+    }
+  }
+}
+
+export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
+  constructor(
+    side: 'input' | 'output',
+    protected name: string,
+    private schema: typeof SchemaBase
+  ) {
+    super();
+  }
 
   public encode(data: object): Uint8Array {
     try {
@@ -54,14 +115,6 @@ export class ZProcedureDataSchemaParser {
       this.throwError(e as Error, 'Decode', buffer);
     }
   }
-
-  private throwError(
-    e: Error,
-    _process: 'Encode' | 'Decode',
-    data: unknown
-  ): never {
-    throw new ParserDataError(this.name, _process, e.name, e.message, data);
-  }
 }
 
 /**
@@ -69,13 +122,35 @@ export class ZProcedureDataSchemaParser {
  * encoders and decoders
  */
 export class ZProcedureDataParser {
-  public readonly input!: ZProcedureDataSchemaParser;
+  public readonly input!: ZProcedureDataParserSchema;
 
-  public readonly output!: ZProcedureDataSchemaParser;
+  public readonly output!: ZProcedureDataParserSchema;
 
   constructor(public readonly name: string, schemas: ApiProceduresSchemas) {
-    this.input = new ZProcedureDataSchemaParser(name, schemas.input);
-    this.output = new ZProcedureDataSchemaParser(name, schemas.output);
+    this.input = this.createSchemaParserInstance('input', name, schemas.input);
+    this.output = this.createSchemaParserInstance(
+      'output',
+      name,
+      schemas.output
+    );
+  }
+
+  private createSchemaParserInstance(
+    side: 'input' | 'output',
+    name: string,
+    schema: SchemaDef
+  ): ZProcedureDataParserSchema {
+    return schema.constructor.name === 'Object'
+      ? new ZProcedureDataSchemaDefinitionParser(
+          'output',
+          name,
+          schema as SchemaDefinition
+        )
+      : new ZProcedureDataSchemaParser(
+          'output',
+          name,
+          schema as typeof SchemaBase
+        );
   }
 }
 
