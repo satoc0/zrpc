@@ -1,4 +1,4 @@
-import { Field, Schema, SchemaBase } from '../src/core';
+import { Field, Schema, SchemaBase } from '../../src/core';
 @Schema('BasicSchema')
 class BasicSchema extends SchemaBase<BasicSchema> {
   @Field('string')
