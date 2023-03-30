@@ -14,9 +14,12 @@ function typeOrFieldConstructor(
     );
 
     const typeName = isOptional ? schema.slice(0, -1) : schema;
-    const field = new Field(name, fieldId as number, typeName, {
-      optional: isOptional,
-    });
+    const field = new Field(
+      name,
+      fieldId as number,
+      typeName,
+      isOptional ? 'optional' : 'required'
+    );
 
     return field;
   }
