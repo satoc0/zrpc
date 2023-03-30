@@ -2,7 +2,7 @@ import { Field, Type } from 'protobufjs/light';
 import { SchemaDefinition, SchemaTypes } from './api-definition';
 import { ProtobufTypesWithOptional } from './types';
 
-function fieldConstructor(
+function typeOrFieldConstructor(
   name: string,
   schema: SchemaTypes,
   fieldId: number,
@@ -27,7 +27,12 @@ function fieldConstructor(
 
   for (const fieldName in schema) {
     const fSchema = schema[fieldName];
-    const field = fieldConstructor(fieldName, fSchema, fFieldId, typeRoot);
+    const field = typeOrFieldConstructor(
+      fieldName,
+      fSchema,
+      fFieldId,
+      typeRoot
+    );
 
     typeRoot.add(field);
 
@@ -44,7 +49,7 @@ export function rootConstructor(name: string, schema: SchemaDefinition) {
 
   let id = 0;
   for (const v in schema) {
-    rootType.add(fieldConstructor(v, schema[v], id, rootType));
+    rootType.add(typeOrFieldConstructor(v, schema[v], id, rootType));
     ++id;
   }
 

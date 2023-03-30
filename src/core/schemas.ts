@@ -6,10 +6,6 @@ import {
 } from 'protobufjs/light';
 import { FieldOptions, ProtobufFieldTypes } from './types';
 
-export enum PacketType {
-  ProcedureDataCommunication = 1,
-}
-
 const autoincrementFieldIdSymbol = Symbol('lastFieldId');
 const startFieldIdOffset = 0;
 

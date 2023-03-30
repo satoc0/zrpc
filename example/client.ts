@@ -8,7 +8,10 @@ import { api } from './index';
 
   console.log({ response });
 
-  const response2 = await client.exec('getAccount', { square: 2 });
+  const response2 = await client.exec('getAccount', {
+    square: 2,
+    optional: null,
+  });
 
   console.log({ r: response2.square });
 })();

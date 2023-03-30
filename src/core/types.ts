@@ -54,42 +54,48 @@ export type ProtobufTypesWithOptional =
 
 export type FieldTypesNesting = ProtobufTypesWithOptional | object;
 
-export interface ProtobufToPrimiviteMap {
-  double: number;
-  'double?': number;
-  float: number;
-  'float?': number;
-  int32: number;
-  'int32?': number;
-  uint32: number;
-  'uint32?': number;
-  sint32: number;
-  'sint32?': number;
-  fixed32: number;
-  'fixed32?': number;
-  sfixed32: number;
-  'sfixed32?': number;
-  int64: number;
-  'int64?': number;
-  uint64: number;
-  'uint64?': number;
-  sint64: number;
-  'sint64?': number;
-  fixed64: number;
-  'fixed64?': number;
-  sfixed64: number;
-  'sfixed64?': number;
-  string: string;
-  'string?': string;
-  bool: boolean;
-  'bool?': boolean;
-  bytes: Buffer;
-  'bytes?': Buffer;
-}
+type TypeDescriptor<T, O extends boolean> = { type: T; optional: O };
+
+export type ProtobufToPrimiviteMap = {
+  double: TypeDescriptor<number, false>;
+  'double?': TypeDescriptor<number, true>;
+  float: TypeDescriptor<number, false>;
+  'float?': TypeDescriptor<number, true>;
+  int32: TypeDescriptor<number, false>;
+  'int32?': TypeDescriptor<number, true>;
+  uint32: TypeDescriptor<number, false>;
+  'uint32?': TypeDescriptor<number, true>;
+  sint32: TypeDescriptor<number, false>;
+  'sint32?': TypeDescriptor<number, true>;
+  fixed32: TypeDescriptor<number, false>;
+  'fixed32?': TypeDescriptor<number, true>;
+  sfixed32: TypeDescriptor<number, false>;
+  'sfixed32?': TypeDescriptor<number, true>;
+  int64: TypeDescriptor<number, false>;
+  'int64?': TypeDescriptor<number, true>;
+  uint64: TypeDescriptor<number, false>;
+  'uint64?': TypeDescriptor<number, true>;
+  sint64: TypeDescriptor<number, false>;
+  'sint64?': TypeDescriptor<number, true>;
+  fixed64: TypeDescriptor<number, false>;
+  'fixed64?': TypeDescriptor<number, true>;
+  sfixed64: TypeDescriptor<number, false>;
+  'sfixed64?': TypeDescriptor<number, true>;
+  string: TypeDescriptor<string, false>;
+  'string?': TypeDescriptor<string, true>;
+  bool: TypeDescriptor<boolean, false>;
+  'bool?': TypeDescriptor<boolean, true>;
+  bytes: TypeDescriptor<Buffer, false>;
+  'bytes?': TypeDescriptor<Buffer, true>;
+};
 
 export type ProtobufToPrimivite<T extends SchemaTypes> =
   T extends ProtobufTypesWithOptional
-    ? ProtobufToPrimiviteMap[T]
+    ? ProtobufToPrimiviteMap[T] extends TypeDescriptor<any, any>
+      ? ProtobufToPrimiviteMap[T]['optional'] extends true
+        ? undefined | null | ProtobufToPrimiviteMap[T]['type']
+        : ProtobufToPrimiviteMap[T]['type']
+      : unknown
     : T extends object
     ? { [K in keyof T]: ProtobufToPrimivite<T[K]> }
     : unknown;

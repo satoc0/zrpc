@@ -18,6 +18,7 @@ export const api = new ZRPC({
     getAccount: {
       input: {
         square: 'int32',
+        optional: 'string?',
       },
       output: {
         square: 'int32',

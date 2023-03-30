@@ -11,7 +11,7 @@ import {
   ParserDataError,
   ProcedureParserNotFound,
 } from './core-errors';
-import { PacketType, SchemaBase } from './schemas';
+import { SchemaBase } from './schemas';
 import { rootConstructor } from './type-constructor';
 import { Properties } from './types';
 
@@ -22,7 +22,6 @@ export function encodeByClassSchema<
   Data = Properties<Schema>
 >(schema: typeof SchemaBase, data: Data): Uint8Array {
   const inputData = { ...data } as any;
-  inputData.__packetType = PacketType.ProcedureDataCommunication;
 
   const validationError = schema.verify(data as unknown as object);
 
