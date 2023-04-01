@@ -13,16 +13,13 @@ import {
 } from './core-errors';
 import { SchemaBase } from './schemas';
 import { rootConstructor } from './type-constructor';
-import { Properties } from './types';
-
-type Side = 'Input' | 'Output';
+import { ProcedureDataOperation, ProcedureDataSide, Properties } from './types';
 
 export function encodeByClassSchema<
   Schema extends typeof SchemaBase,
   Data = Properties<Schema>
 >(schema: typeof SchemaBase, data: Data): Uint8Array {
   const inputData = { ...data } as any;
-
   const validationError = schema.verify(data as unknown as object);
 
   if (validationError !== null) {
@@ -45,11 +42,11 @@ export function decodeByClassSchema<O extends object>(
 abstract class ZProcedureDataParserSchema {
   protected name!: string;
 
-  protected side!: Side;
+  protected side!: ProcedureDataSide;
 
   protected throwError(
     e: Error,
-    _process: 'Encode' | 'Decode',
+    _process: ProcedureDataOperation,
     data: unknown
   ): never {
     throw new ParserDataError(
@@ -70,7 +67,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
   private schema!: Type;
 
   constructor(
-    protected readonly side: Side,
+    protected readonly side: ProcedureDataSide,
     protected readonly name: string,
     schemaDefinition: SchemaDefinition
   ) {
@@ -85,7 +82,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
       const buffer = this.schema.encode(message).finish();
       return buffer;
     } catch (e) {
-      this.throwError(e as Error, 'Encode', data);
+      this.throwError(e as Error, ProcedureDataOperation.Encode, data);
     }
   }
 
@@ -94,14 +91,14 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
       const message = this.schema.decode(buffer);
       return message.toJSON();
     } catch (e) {
-      this.throwError(e as Error, 'Decode', buffer);
+      this.throwError(e as Error, ProcedureDataOperation.Decode, buffer);
     }
   }
 }
 
 export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
   constructor(
-    protected side: Side,
+    protected side: ProcedureDataSide,
     protected name: string,
     private schema: typeof SchemaBase
   ) {
@@ -113,7 +110,7 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
       const result = encodeByClassSchema(this.schema, data);
       return result;
     } catch (e) {
-      this.throwError(e as Error, 'Encode', data);
+      this.throwError(e as Error, ProcedureDataOperation.Encode, data);
     }
   }
 
@@ -122,7 +119,7 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
       const result = decodeByClassSchema(this.schema, buffer);
       return result;
     } catch (e) {
-      this.throwError(e as Error, 'Decode', buffer);
+      this.throwError(e as Error, ProcedureDataOperation.Decode, buffer);
     }
   }
 }
@@ -137,16 +134,20 @@ export class ZProcedureDataParser {
   public readonly output!: ZProcedureDataParserSchema;
 
   constructor(public readonly name: string, schemas: ApiProceduresSchemas) {
-    this.input = this.createSchemaParserInstance('Input', name, schemas.input);
+    this.input = this.createSchemaParserInstance(
+      ProcedureDataSide.Input,
+      name,
+      schemas.input
+    );
     this.output = this.createSchemaParserInstance(
-      'Output',
+      ProcedureDataSide.Output,
       name,
       schemas.output
     );
   }
 
   private createSchemaParserInstance(
-    side: Side,
+    side: ProcedureDataSide,
     name: string,
     schema: SchemaDef
   ): ZProcedureDataParserSchema {

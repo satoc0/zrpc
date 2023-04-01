@@ -1,7 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { SchemaDefToType } from '../core';
 import { ApiProceduresMap } from '../core/api-definition';
-import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
+import {
+  HTTP_ERROR_STATUS_CODE,
+  HTTP_SUCCESS_STATUS_CODE,
+  PROTOBUF_CONTENT_TYPE,
+} from '../core/constants';
 import { ProcedureNotFound, ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ProcedureHandler } from './procedure-handler';
@@ -17,10 +21,10 @@ export class ZServer<
 
   constructor(private def: ZAPI) {}
 
-  public entry = async (
+  public async entry(
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
-  ) => {
+  ) {
     try {
       const procedureName = (req.url as string).slice(1);
       const handler = this.handlersMap.get(procedureName);
@@ -29,17 +33,20 @@ export class ZServer<
         throw new ProcedureNotFound(procedureName);
       }
 
-      const buffer = await this.readBuffer(req);
+      const buffer = await this.readBuffer(req, procedureName);
       const procedureData = this.def.proceduresDataParsers.get(procedureName);
       const inputDecodedData = procedureData.input.decode(buffer);
+
+      res.writeProcessing();
+
       const handlerResult = await handler.run(inputDecodedData);
       const outputBuffer = procedureData.output.encode(handlerResult);
 
-      this.dispatch(res, 200, Buffer.from(outputBuffer));
+      this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
     } catch (e) {
       this.dispatchError(res, e as Error);
     }
-  };
+  }
 
   private dispatchError(res: ServerResponse<IncomingMessage>, e: Error) {
     if (e instanceof ZError) {
@@ -50,14 +57,18 @@ export class ZServer<
   }
 
   private dispatchZError(res: ServerResponse<IncomingMessage>, error: ZError) {
-    this.dispatch(res, 500, Buffer.from(error.getResponseBuffer()));
+    this.dispatch(
+      res,
+      HTTP_ERROR_STATUS_CODE,
+      Buffer.from(error.getResponseBuffer())
+    );
   }
 
   private dispatchStandardError(
     res: ServerResponse<IncomingMessage>,
     e: Error
   ) {
-    res.statusCode = 500;
+    res.statusCode = HTTP_ERROR_STATUS_CODE;
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ message: e.message, name: e.name }), 'utf8');
   }
@@ -88,21 +99,33 @@ export class ZServer<
     return this;
   }
 
-  private async readBuffer(req: IncomingMessage): Promise<Buffer> {
+  private async readBuffer(
+    req: IncomingMessage,
+    procedureName: string
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const arr: Buffer[] = [];
 
-      req.on('data', (chunk: Buffer) => {
+      function onData(chunk: Buffer) {
         arr.push(chunk);
-      });
+      }
 
-      req.on('end', () => {
+      function onError(err: Error) {
+        req.off('data', onData);
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        req.off('end', onEnd);
+        reject(new BodyReadError(procedureName, `${err.name}: ${err.message}`));
+      }
+
+      function onEnd() {
+        req.off('data', onData);
+        req.off('error', onError);
         resolve(Buffer.concat(arr));
-      });
+      }
 
-      req.on('error', (err) => {
-        reject(new BodyReadError(`${err.name}: ${err.message}`));
-      });
+      req.on('data', onData);
+      req.on('end', onEnd);
+      req.on('error', onError);
     });
   }
 }

@@ -1,4 +1,8 @@
-import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
+import {
+  HTTP_ERROR_STATUS_CODE,
+  PROTOBUF_CONTENT_TYPE,
+} from '../core/constants';
+import { ZError } from '../core/core-errors';
 import { ZProcedureDataParser } from '../core/procedure-data';
 import { Buffer } from 'buffer';
 
@@ -56,15 +60,22 @@ export class ZClientRequest {
       case 'application/json':
         return response.json();
       case PROTOBUF_CONTENT_TYPE:
-        return this.decodeResponse(response);
+        return this.decodeProtoResponse(response);
       default:
         throw new Error('Unhandled response content-type');
     }
   }
 
-  private async decodeResponse(response: Response): Promise<object> {
+  private async decodeProtoResponse(response: Response): Promise<object> {
     const arrBuffer = await response.arrayBuffer();
     const outputBuffer = Buffer.from(arrBuffer);
+
+    if (response.status === HTTP_ERROR_STATUS_CODE) {
+      const zErrorMessage = ZError.schema.decode(outputBuffer).toJSON();
+
+      return zErrorMessage;
+    }
+
     const outputDecodedData = this.procedureData.output.decode(outputBuffer);
 
     return outputDecodedData;

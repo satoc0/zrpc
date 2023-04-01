@@ -1,75 +1,103 @@
-import { encodeByClassSchema } from './procedure-data';
-import { Field, Schema, SchemaBase } from './schemas';
+import { SchemaDefinition } from './api-definition';
+import { rootConstructor } from './type-constructor';
+import { ProcedureDataOperation, ProcedureDataSide } from './types';
 
-@Schema('z-error-data')
-export class ZErrorData extends SchemaBase {
-  @Field('string')
-  errorCode!: string;
-
-  @Field('string')
-  message!: string;
-
-  @Field('string')
-  auxData!: string;
+export interface ZErrorData {
+  isZError: boolean;
+  errorCode: string;
+  message: string;
+  procedureName: string;
+  auxData?: string;
 }
 
-export abstract class ZError extends Error {
+export class ZError extends Error {
+  static schemaDef: SchemaDefinition = {
+    isZError: 'bool',
+    errorCode: 'string',
+    message: 'string',
+    procedureName: 'string',
+    auxData: 'string',
+  };
+
+  static schema = rootConstructor('ZError', ZError.schemaDef);
+
+  static is(obj: any): obj is ZErrorData {
+    return !!obj.isZError;
+  }
+
+  static factory(data: ZErrorData): ZError {
+    return new ZError(data);
+  }
+
+  public readonly isZError = true;
+
+  constructor(
+    data: Omit<ZErrorData, 'isZError'>,
+    public readonly errorCode = data.errorCode,
+    public readonly message = data.message,
+    public readonly procedureName = data.procedureName,
+    public readonly auxData = data.auxData || ''
+  ) {
+    super(data.message);
+  }
+
   getResponseBuffer(): Uint8Array {
-    return encodeByClassSchema(ZErrorData, {
+    const message = ZError.schema.create({
+      isZError: true,
       errorCode: this.errorCode,
       message: this.message,
       auxData: this.auxData,
+      procedureName: this.procedureName,
     });
-  }
 
-  constructor(
-    public readonly errorCode: string,
-    public readonly message: string,
-    public readonly auxData: string
-  ) {
-    super(message);
+    const buffer = ZError.schema.encode(message).finish();
+    return buffer;
   }
 }
 
 export class InvalidSchemaData extends ZError {
   constructor(public readonly procedureName: string) {
-    super('invalid-schema', 'Invalid schema: ' + procedureName, '');
+    super({
+      errorCode: 'invalid-schema',
+      message: 'Invalid schema: ' + procedureName,
+      procedureName,
+    });
   }
 }
 
 export class ParserDataError extends ZError {
   constructor(
     public readonly procedureName: string,
-    public readonly side: 'Input' | 'Output',
-    process: 'Encode' | 'Decode',
+    public readonly side: ProcedureDataSide,
+    process: ProcedureDataOperation,
     name: string,
     message: string,
     data: unknown
   ) {
-    super(
-      'parser-' + process.toLocaleLowerCase(),
-      `Procedure: ${procedureName};\nError: ${name};\n${message};\nData: ${data}`,
-      ''
-    );
+    super({
+      errorCode: 'parser-' + process.toLocaleLowerCase(),
+      message: `${name};\n${message};\nData: ${data}`,
+      procedureName,
+    });
   }
 }
 
 export class ProcedureParserNotFound extends ZError {
   constructor(public readonly procedureName: string) {
-    super(
-      'parser-not-found',
-      'Procedure parser not found for: ' + procedureName,
-      ''
-    );
+    super({
+      errorCode: 'parser-not-found',
+      message: 'Procedure parser not found for: ' + procedureName,
+      procedureName,
+    });
   }
 }
 
 export class ProcedureNotFound extends ZError {
   constructor(public readonly procedureName: string) {
-    super(
-      'procedure-not-found',
-      'Procedure handler not found: ' + procedureName,
-      ''
-    );
+    super({
+      errorCode: 'procedure-not-found',
+      message: 'Procedure handler not found: ' + procedureName,
+      procedureName,
+    });
   }
 }

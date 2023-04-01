@@ -135,3 +135,13 @@ export type Properties<T> = Omit<
 >;
 
 export type AcceptPromise<T> = T | Promise<T>;
+
+export enum ProcedureDataSide {
+  Input = 'input',
+  Output = 'output',
+}
+
+export enum ProcedureDataOperation {
+  Encode = 'Encode',
+  Decode = 'Decode',
+}

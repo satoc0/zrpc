@@ -1,8 +1,15 @@
 import { ZError } from '../core/core-errors';
 
 export class BodyReadError extends ZError {
-  constructor(originErrorMessage: string) {
-    super('body-read-error', 'Body read error', originErrorMessage);
+  constructor(
+    public readonly procedureName: string,
+    originErrorMessage: string
+  ) {
+    super({
+      errorCode: 'body-read-error',
+      message: 'Body read error ' + originErrorMessage,
+      procedureName,
+    });
   }
 }
 
@@ -12,10 +19,10 @@ export class ProcedureHandlerError extends ZError {
     errorName: string,
     errorMessge: string
   ) {
-    super(
-      'procedure-handler',
-      `Procedure: ${procedureName};\nError: ${errorName};\n${errorMessge}`,
-      ''
-    );
+    super({
+      errorCode: 'procedure-handler',
+      message: `${errorName}: ${errorMessge}`,
+      procedureName,
+    });
   }
 }

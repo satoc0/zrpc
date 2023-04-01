@@ -1,4 +1,5 @@
 import { ApiProceduresMap, Properties, SchemaDefToType } from '../core';
+import { ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ZClientRequest } from './client-request';
 import { ClientConfig } from './client.types';
@@ -24,6 +25,10 @@ export class ZClient<
       : {};
 
     const response = await clientRequest.fetch(this.getBaseUrl(), requestBase);
+
+    if (ZError.is(response)) {
+      throw ZError.factory(response);
+    }
 
     return response as O;
   }
