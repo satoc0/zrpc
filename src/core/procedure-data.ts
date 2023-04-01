@@ -15,7 +15,7 @@ import { SchemaBase } from './schemas';
 import { rootConstructor } from './type-constructor';
 import { Properties } from './types';
 
-type Side = 'input' | 'output';
+type Side = 'Input' | 'Output';
 
 export function encodeByClassSchema<
   Schema extends typeof SchemaBase,
@@ -45,12 +45,21 @@ export function decodeByClassSchema<O extends object>(
 abstract class ZProcedureDataParserSchema {
   protected name!: string;
 
+  protected side!: Side;
+
   protected throwError(
     e: Error,
     _process: 'Encode' | 'Decode',
     data: unknown
   ): never {
-    throw new ParserDataError(this.name, _process, e.name, e.message, data);
+    throw new ParserDataError(
+      this.name,
+      this.side,
+      _process,
+      e.name,
+      e.message,
+      data
+    );
   }
 
   abstract encode(data: object): Uint8Array;
@@ -61,8 +70,8 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
   private schema!: Type;
 
   constructor(
-    side: Side,
-    protected name: string,
+    protected readonly side: Side,
+    protected readonly name: string,
     schemaDefinition: SchemaDefinition
   ) {
     super();
@@ -92,7 +101,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
 
 export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
   constructor(
-    side: Side,
+    protected side: Side,
     protected name: string,
     private schema: typeof SchemaBase
   ) {
@@ -128,9 +137,9 @@ export class ZProcedureDataParser {
   public readonly output!: ZProcedureDataParserSchema;
 
   constructor(public readonly name: string, schemas: ApiProceduresSchemas) {
-    this.input = this.createSchemaParserInstance('input', name, schemas.input);
+    this.input = this.createSchemaParserInstance('Input', name, schemas.input);
     this.output = this.createSchemaParserInstance(
-      'output',
+      'Output',
       name,
       schemas.output
     );

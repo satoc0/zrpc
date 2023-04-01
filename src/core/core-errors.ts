@@ -23,9 +23,9 @@ export abstract class ZError extends Error {
   }
 
   constructor(
-    private errorCode: string,
+    public readonly errorCode: string,
     public readonly message: string,
-    private auxData: string
+    public readonly auxData: string
   ) {
     super(message);
   }
@@ -40,6 +40,7 @@ export class InvalidSchemaData extends ZError {
 export class ParserDataError extends ZError {
   constructor(
     public readonly procedureName: string,
+    public readonly side: 'Input' | 'Output',
     process: 'Encode' | 'Decode',
     name: string,
     message: string,
