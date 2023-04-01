@@ -1,4 +1,4 @@
-import { Field, Schema, SchemaBase } from '../../src/core';
+import { Field, ProcedureDataSide, Schema, SchemaBase } from '../../src/core';
 import { ParserDataError } from '../../src/core/core-errors';
 import { ZProceduresDataParsers } from '../../src/core/procedure-data';
 
@@ -79,7 +79,7 @@ function createTest(
         expect(error).toBeInstanceOf(ParserDataError);
         expect(error.procedureName).toBe(procedureName);
         expect(error.errorCode).toBe('parser-encode');
-        expect(error.side).toBe('Input');
+        expect(error.side).toBe(ProcedureDataSide.Input);
       }
 
       try {
@@ -89,7 +89,7 @@ function createTest(
         expect(error).toBeInstanceOf(ParserDataError);
         expect(error.procedureName).toBe(procedureName);
         expect(error.errorCode).toBe('parser-encode');
-        expect(error.side).toBe('Output');
+        expect(error.side).toBe(ProcedureDataSide.Output);
       }
 
       try {
@@ -100,7 +100,7 @@ function createTest(
         expect(error).toBeInstanceOf(ParserDataError);
         expect(error.procedureName).toBe(procedureName);
         expect(error.errorCode).toBe('parser-decode');
-        expect(error.side).toBe('Input');
+        expect(error.side).toBe(ProcedureDataSide.Input);
       }
 
       try {
@@ -110,7 +110,7 @@ function createTest(
         expect(error).toBeInstanceOf(ParserDataError);
         expect(error.procedureName).toBe(procedureName);
         expect(error.errorCode).toBe('parser-decode');
-        expect(error.side).toBe('Output');
+        expect(error.side).toBe(ProcedureDataSide.Output);
       }
     });
   });
