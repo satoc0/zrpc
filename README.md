@@ -16,7 +16,7 @@ The use of protobuf over JSON offers more efficient serialization in terms of ti
 
 <br>
 
-## Install {#install}
+## Install
 
 ```
 npm install zrpc
@@ -24,7 +24,7 @@ npm install zrpc
 
 <br>
 
-## Usage {#usage}
+## Usage
 
 To get started with ZRPC, you need to define the procedures calls and their schemas, such as "input" and "output"
 
@@ -98,7 +98,7 @@ async function main() {
 }
 ```
 
-## Benchmark {#benchmark}
+## Benchmark
 
 Because of protobuf serialization and a simplest implementation, ZRPC can be 2 times more fast than tRPC
 
