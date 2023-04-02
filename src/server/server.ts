@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { SchemaDefToType } from '../core';
 import { ApiProceduresMap } from '../core/api-definition';
 import {
@@ -10,6 +10,7 @@ import { ProcedureNotFound, ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ProcedureHandler } from './procedure-handler';
 import { BodyReadError } from './server-errors';
+import { MiddlewareHandler, ServerConfig } from './server.types';
 
 type HandlerMap = Map<string, ProcedureHandler<any, any>>;
 
@@ -19,7 +20,13 @@ export class ZServer<
 > {
   private handlersMap: HandlerMap = new Map();
 
-  constructor(private def: ZAPI) {}
+  constructor(private def: ZAPI, private config?: ServerConfig) {}
+
+  public extend(
+    config: ServerConfig
+  ): Omit<ZServer<ZAPI, Procedures>, 'entry'> {
+    return new ZServer(this.def, config);
+  }
 
   public async entry(
     req: IncomingMessage,
@@ -39,12 +46,27 @@ export class ZServer<
 
       res.writeProcessing();
 
+      await this.runMiddlewares(req, res, inputDecodedData);
+      await handler.runMiddlewares(req, res, inputDecodedData);
+
       const handlerResult = await handler.run(inputDecodedData);
       const outputBuffer = procedureData.output.encode(handlerResult);
 
       this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
     } catch (e) {
       this.dispatchError(res, e as Error);
+    }
+  }
+
+  private async runMiddlewares(
+    req: IncomingMessage,
+    res: ServerResponse,
+    data: object
+  ) {
+    if (!this.config || !Array.isArray(this.config.middlewares)) return;
+
+    for (const midde of this.config.middlewares) {
+      await midde(req, res, data);
     }
   }
 
@@ -87,12 +109,13 @@ export class ZServer<
     name: Name,
     handler: (
       data: SchemaDefToType<Procedure['input']>
-    ) => Promise<SchemaDefToType<Procedure['output']>>
+    ) => Promise<SchemaDefToType<Procedure['output']>>,
+    middlewares: MiddlewareHandler<Procedure['input']>[] = []
   ): ZServer<ZAPI, Procedures> {
-    const procedureHandler = new ProcedureHandler(
-      name as string,
-      handler as any
-    );
+    const procedureHandler = new ProcedureHandler<
+      Procedure['input'],
+      Procedure['output']
+    >(name as string, handler, middlewares);
 
     this.handlersMap.set(name as string, procedureHandler);
 
