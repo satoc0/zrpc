@@ -17,8 +17,13 @@ export const api = new ZRPC({
 });
 
 const zServerPort = 3001;
-new ZServer(api);
+const server = new ZServer(api);
+
 const httpServer = new Server();
+
+server.api.sum(({ left, right }) => {
+  return { result: left + right };
+});
 
 httpServer.listen(zServerPort, async () => {});
 

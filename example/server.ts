@@ -5,13 +5,9 @@ import { ZServer } from '../src';
 (async () => {
   const server = new ZServer(api);
 
-  server
-    .handle('getAccount', async ({ square }) => {
-      return { square: square ^ 2, s: '' };
-    })
-    .handle('GetAccountCommand', async (i) => {
-      return { name: i.name };
-    });
+  server.api.account.get(async () => {
+    return { data: 'asd' };
+  });
 
   const httpServer = new Server(server.entry);
   const serverPort = 3000;
@@ -39,23 +35,3 @@ import { ZServer } from '../src';
     httpServer.close();
   });
 })();
-
-// regras
-// apenas esses caracteres para chaves: qwertyuiopasdfghjklzxcvbnm
-//
-// tipos base: 1 = chave:valor, 2 = subdata, 3 = repeated
-// { name: 'string', name2: 'string2' }
-// arr
-// byte_nextSectorAddress = endereço do próximo setor
-// byte_type = Tipo do dado: 1 = chave:valor, 2 = subdata, 3 = repeated
-// byte_fieldNameBytesLength = tamanho do nome do campo
-// byte_fieldNameDataBytes = tamanho do nome do campo
-// bytes_valuesDataBytes = bytes do valor
-// [
-//  setor
-//  byte_nextSectorAddress, byte_type, byte_fieldNameBytesLength, ...byte_fieldNameDataBytes, ...bytes_valuesDataBytes,
-//  setor
-//  byte_nextSectorAddress, byte_type, byte_fieldNameBytesLength, ...byte_fieldNameDataBytes, ...bytes_valuesDataBytes,
-//]
-// decode linear ou split dos setores identificados e secode em paralelo?
-// []

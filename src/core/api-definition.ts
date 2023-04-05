@@ -7,21 +7,11 @@ export interface ApiDefinition<
   procedures: Procedures;
 }
 
-export type ApiProceduresSchemas = {
-  input: SchemaDef;
-  output: SchemaDef;
-};
-
-export interface ApiProceduresSchemasDecorators {
-  input: typeof SchemaBase;
-  output: typeof SchemaBase;
-}
-
 export type SchemaDef = typeof SchemaBase | SchemaDefinition;
 
-export interface ApiProceduresSchemaJSON {
-  input: SchemaDefinition;
-  output: SchemaDefinition;
+export interface ApiProceduresSchemas {
+  input: SchemaDefinition | typeof SchemaBase;
+  output: SchemaDefinition | typeof SchemaBase;
 }
 
 export type SchemaTypes = ProtobufTypesWithOptional | SchemaDefinition;
@@ -31,5 +21,5 @@ export type SchemaDefinition = {
 };
 
 export type ApiProceduresMap = {
-  [commandName: string]: ApiProceduresSchemas;
+  [commandName: string]: ApiProceduresSchemas | ApiProceduresMap;
 };

@@ -8,7 +8,7 @@ class BasicSchema extends SchemaBase<BasicSchema> {
   stringField2!: string;
 }
 
-it('should encode and decode the schema correctly', () => {
+it('should encode and decode the schema correctly with decorators', () => {
   const raw = { stringField: 'raw', stringField2: 'raw2' };
 
   const message = BasicSchema.fromObject(raw);

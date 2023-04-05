@@ -161,21 +161,51 @@ export class ZProcedureDataParser {
   }
 }
 
+type SchemasOrNestedProcedure = ZProcedureDataParser | ApiProceduresDataParsers;
+
+export type ApiProceduresDataParsers = {
+  [procedureName: string]: SchemasOrNestedProcedure;
+};
+
+export function isProcedureSchema(
+  target: ApiProceduresMap | ApiProceduresSchemas
+): target is ApiProceduresSchemas {
+  const keys: string[] = Object.keys(target).sort();
+  const [input, output] = keys;
+
+  return keys.length === 2 && input === 'input' && output === 'output';
+}
+
 export class ZProceduresDataParsers {
   private map: Map<string, ZProcedureDataParser> = new Map();
 
   constructor(private proceduresMap: ApiProceduresMap) {
-    this.buildMap();
+    this.buildMap(proceduresMap);
   }
 
-  private buildMap() {
-    Object.entries(this.proceduresMap).forEach(([commandName, schemas]) => {
-      const procedureDataInstance = new ZProcedureDataParser(
-        commandName,
-        schemas as ApiProceduresSchemas
-      );
-      this.map.set(commandName, procedureDataInstance);
-    });
+  private buildMap(map: ApiProceduresMap, procedurePathArr: string[] = []) {
+    for (const procedureName in map) {
+      const procedure = map[procedureName];
+
+      procedurePathArr.push(procedureName);
+
+      if (isProcedureSchema(procedure)) {
+        procedurePathArr.pop();
+
+        const procedurePath: string = [...procedurePathArr, procedureName].join(
+          '/'
+        );
+
+        this.map.set(
+          procedurePath,
+          new ZProcedureDataParser(procedurePath, procedure)
+        );
+      } else {
+        this.buildMap(procedure, procedurePathArr);
+
+        procedurePathArr.pop();
+      }
+    }
   }
 
   public get(name: string): ZProcedureDataParser {

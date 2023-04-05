@@ -1,39 +1,19 @@
-import { ApiProceduresMap, Properties, SchemaDefToType } from '../core';
-import { ZError } from '../core/core-errors';
+import { ApiProceduresMap } from '../core';
 import { ZRPC } from '../zrpc';
-import { ZClientRequest } from './client-request';
+import { ZClientApiConstructor } from './client-api-constructor';
 import { ClientConfig } from './client.types';
 
 export class ZClient<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  constructor(private def: ZAPI, private config?: ClientConfig) {}
+  apiConstructor: ZClientApiConstructor<ZAPI, Procedures>;
 
-  async exec<
-    Name extends keyof Procedures,
-    Procedure extends Procedures[Name],
-    I = SchemaDefToType<Procedure['input']>,
-    O = SchemaDefToType<Procedure['output']>
-  >(name: Name, input: Properties<I>): Promise<O> {
-    const procedureData = this.def.proceduresDataParsers.get(name as string);
-
-    const clientRequest = new ZClientRequest(procedureData, input);
-
-    const requestBase: RequestInit = this.config?.requestBuilder
-      ? await this.config.requestBuilder()
-      : {};
-
-    const response = await clientRequest.fetch(this.getBaseUrl(), requestBase);
-
-    if (ZError.is(response)) {
-      throw ZError.factory(response);
-    }
-
-    return response as O;
+  constructor(private def: ZAPI, private config?: ClientConfig) {
+    this.apiConstructor = new ZClientApiConstructor(this.def, this.config);
   }
 
-  private getBaseUrl(): string {
-    return this.config?.url ?? window.location.origin;
+  get api() {
+    return this.apiConstructor.structor;
   }
 }

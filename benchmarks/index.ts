@@ -12,7 +12,7 @@ suit
     await trpcClient.sum.query({ left: 5, right: 5 });
   })
   .add('zrpc', async () => {
-    await zrpcClient.exec('sum', { left: 5, right: 5 });
+    await zrpcClient.api.sum({ left: 5, right: 5 });
   })
   .on('error', (...args: any[]) => {
     console.log({ args });

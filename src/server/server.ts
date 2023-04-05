@@ -1,31 +1,28 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { SchemaDefToType } from '../core';
 import { ApiProceduresMap } from '../core/api-definition';
 import {
   HTTP_ERROR_STATUS_CODE,
   HTTP_SUCCESS_STATUS_CODE,
   PROTOBUF_CONTENT_TYPE,
 } from '../core/constants';
-import { ProcedureNotFound, ZError } from '../core/core-errors';
+import { ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
-import { ProcedureHandler } from './procedure-handler';
+import { ServerApiConstructor } from './server-api-constructor';
 import { BodyReadError } from './server-errors';
-import { MiddlewareHandler, ServerConfig } from './server.types';
-
-type HandlerMap = Map<string, ProcedureHandler<any, any>>;
+import { ServerConfig } from './server.types';
 
 export class ZServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  private handlersMap: HandlerMap = new Map();
+  private apiConstructor!: ServerApiConstructor<ZAPI, Procedures>;
 
-  constructor(private def: ZAPI, private config?: ServerConfig) {}
+  constructor(private def: ZAPI, private config?: ServerConfig) {
+    this.apiConstructor = new ServerApiConstructor(def);
+  }
 
-  public extend(
-    config: ServerConfig
-  ): Omit<ZServer<ZAPI, Procedures>, 'entry'> {
-    return new ZServer(this.def, config);
+  get api() {
+    return this.apiConstructor.structor;
   }
 
   public async entry(
@@ -33,12 +30,12 @@ export class ZServer<
     res: ServerResponse<IncomingMessage>
   ) {
     try {
-      const procedureName = (req.url as string).slice(1);
-      const handler = this.handlersMap.get(procedureName);
+      const procedurePathArr = (req.url as string).split('/');
 
-      if (!handler) {
-        throw new ProcedureNotFound(procedureName);
-      }
+      procedurePathArr.shift();
+
+      const procedureName: string = procedurePathArr.join('/');
+      const handler = this.apiConstructor.getHandler(procedureName);
 
       const buffer = await this.readBuffer(req, procedureName);
       const procedureData = this.def.proceduresDataParsers.get(procedureName);
@@ -103,23 +100,6 @@ export class ZServer<
     res.setHeader('Content-Type', PROTOBUF_CONTENT_TYPE);
     res.statusCode = statusCode;
     res.end(data, 'binary');
-  }
-
-  handle<Name extends keyof Procedures, Procedure extends Procedures[Name]>(
-    name: Name,
-    handler: (
-      data: SchemaDefToType<Procedure['input']>
-    ) => Promise<SchemaDefToType<Procedure['output']>>,
-    middlewares: MiddlewareHandler<Procedure['input']>[] = []
-  ): ZServer<ZAPI, Procedures> {
-    const procedureHandler = new ProcedureHandler<
-      Procedure['input'],
-      Procedure['output']
-    >(name as string, handler, middlewares);
-
-    this.handlersMap.set(name as string, procedureHandler);
-
-    return this;
   }
 
   private async readBuffer(

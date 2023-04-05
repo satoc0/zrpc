@@ -1,20 +1,17 @@
-# ZRPC
-
+<center>
+<h1>ZRPC</h1>
 Another way to make communication between client a server.
 
-ZRPC is inspired by tRPC, but aims to improve the performance of applications by utilizing the protobuf serialization format keeping type safety.
+<a href="#install">Install</a> - <a href="#usage">Usage</a> - <a href="#benchmark">Benchmarks</a>
+
+</center>
+<br>
+
+ZRPC is inspired by tRPC, but aims to improve the performance of applications by utilizing the protobuf serialization format and keep type safety.
 
 The use of protobuf over JSON offers more efficient serialization in terms of time and size, thats improve the performance of applications and save resources.
 
-**Not production-ready, can have breaking changes over time.**
-
-<br>
-
-- [Install](#install)
-- [Usage](#usage)
-- [Benchmarks](#benchmark)
-
-<br>
+**Not production-ready, can have breaking changes over time.** <br>
 
 ## Install
 
@@ -22,17 +19,11 @@ The use of protobuf over JSON offers more efficient serialization in terms of ti
 npm install zrpc
 ```
 
-<br>
-
 ## Usage
 
 To get started with ZRPC, you need to define the procedures calls and their schemas, such as "input" and "output"
 
-<br>
-
-### 1. Create the api definition
-
-First you need create the api procedures and schema definitions: `api.ts`
+### 1. Create the api definition `api.ts`
 
 ```typescript
 import ZRPC from 'zrpc';
@@ -60,15 +51,15 @@ export const api = new ZRPC({
 import ZRPC from 'zrpc';
 import { api } from './api.ts';
 
-const zServer = new ZServer(api);
+const server = new ZServer(api);
 
-zServer.handle('getFullName', async (input) => {
+server.api.getFullName(async (input) => {
   return { fullName: `${input.firstName} ${input.lastName}` }
 });
 
 // Create a http server and pass z server entry handle
 // you can use it, anywhere
-const httpServer = createServer(zServer.entry);
+const httpServer = createServer(server.entry);
 
 const port = process.env.PORT || 3000;
 
@@ -85,10 +76,10 @@ server.listen(port+, () => {
 import { ZClient } from 'zrpc';
 import { api } from './api.ts';
 
-const zClient = new ZClient(api, { url: 'http://localhost:3000' });
+const client = new ZClient(api, { url: 'http://localhost:3000' });
 
 async function main() {
-  const { fullName } = await zClient.exec('getFullName', {
+  const { fullName } = await client.api.getFullName({
     firstName: 'John',
     lastName: 'Doe',
   });
@@ -106,8 +97,7 @@ Because of protobuf serialization and a simplest implementation, ZRPC can be 2 t
 
 ```
 > zrpc@0.0.0 benchmark
-> NODE_OPTIONS=--max-old-space-size=8192 ts-node --p
-roject tsconfig.ts-node.json benchmarks/index.ts
+> NODE_OPTIONS=--max-old-space-size=8192 ts-node --project tsconfig.ts-node.json benchmarks/index.ts
 trpc x 120,567 ops/sec ±9.25% (50 runs sampled)
 zrpc x 349,709 ops/sec ±27.45% (23 runs sampled)
 Fastest is zrpc
