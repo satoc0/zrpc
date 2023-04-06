@@ -1,8 +1,8 @@
-import { ZRPC } from '../zrpc';
+import { ApiConstructor } from '../core/api-constructor';
 import { ApiProceduresMap, ApiProceduresSchemas } from '../core/api-definition';
-import { ProcedureNotFound, ZError } from '../core/core-errors';
-import { isProcedureSchema } from '../core/procedure-data';
+import { ZError } from '../core/core-errors';
 import { SchemaDefToType } from '../core/types';
+import { ZRPC } from '../zrpc';
 import { ZClientRequest } from './client-request';
 import { ClientConfig } from './client.types';
 
@@ -21,52 +21,18 @@ export type ApiConstructorMap<
 export class ZClientApiConstructor<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> {
-  private handlersMap = new Map();
-
-  public structor: ApiConstructorMap<Procedures> =
+> extends ApiConstructor {
+  public readonly structor: ApiConstructorMap<Procedures> =
     {} as ApiConstructorMap<Procedures>;
 
-  constructor(private def: ZAPI, private config?: ClientConfig) {
+  constructor(protected def: ZAPI, private config?: ClientConfig) {
+    super();
     this.buildStructor(this.structor, this.def.apiDefinition.procedures);
   }
 
-  private buildStructor(
-    structor: ApiConstructorMap<Procedures>,
-    map: ApiProceduresMap,
-    procedurePathArr: string[] = []
-  ) {
-    for (const procedureName in map) {
-      const procedure = map[procedureName];
-
-      procedurePathArr.push(procedureName);
-
-      if (isProcedureSchema(procedure)) {
-        procedurePathArr.pop();
-
-        const procedurePath: string = [...procedurePathArr, procedureName].join(
-          '/'
-        );
-
-        structor[procedureName as keyof Procedures] = this.createCaller(
-          procedurePath
-        ) as any;
-      } else {
-        structor[procedureName as keyof ApiConstructorMap<Procedures>] =
-          {} as any;
-
-        this.buildStructor(
-          structor[procedureName] as any,
-          procedure,
-          procedurePathArr
-        );
-
-        procedurePathArr.pop();
-      }
-    }
-  }
-
-  private createCaller(procedurePath: string): (input: any) => Promise<any> {
+  protected methodStructor(
+    procedurePath: string
+  ): (input: any) => Promise<any> {
     return async (input) => {
       const procedureData = this.def.proceduresDataParsers.get(procedurePath);
 
@@ -91,15 +57,5 @@ export class ZClientApiConstructor<
 
   private getBaseUrl(): string {
     return this.config?.url ?? window.location.origin;
-  }
-
-  public getHandler(procedurePath: string) {
-    const handler = this.handlersMap.get(procedurePath);
-
-    if (!handler) {
-      throw new ProcedureNotFound(procedurePath);
-    }
-
-    return handler;
   }
 }

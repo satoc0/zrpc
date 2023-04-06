@@ -4,8 +4,8 @@ import {
   ApiProceduresSchemas,
   SchemaDefToType,
 } from '../core';
+import { ApiConstructor } from '../core/api-constructor';
 import { ProcedureNotFound } from '../core/core-errors';
-import { isProcedureSchema } from '../core/procedure-data';
 import { ZRPC } from '../zrpc';
 import { ProcedureHandler } from './procedure-handler';
 
@@ -28,54 +28,26 @@ type HandlerMap = Map<string, ProcedureHandler<any, any>>;
 export class ServerApiConstructor<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> {
+> extends ApiConstructor {
   private handlersMap: HandlerMap = new Map();
 
-  public structor: ApiConstructorMap<Procedures> =
+  public readonly structor: ApiConstructorMap<Procedures> =
     {} as ApiConstructorMap<Procedures>;
 
   constructor(private def: ZAPI) {
+    super();
     this.buildStructor(this.structor, this.def.apiDefinition.procedures);
   }
 
-  private buildStructor(
-    structor: ApiConstructorMap<Procedures>,
-    map: ApiProceduresMap,
-    procedurePathArr: string[] = []
-  ) {
-    for (const procedureName in map) {
-      const procedure = map[procedureName];
-
-      procedurePathArr.push(procedureName);
-
-      if (isProcedureSchema(procedure)) {
-        procedurePathArr.pop();
-
-        const procedurePath: string = [...procedurePathArr, procedureName].join(
-          '/'
-        );
-
-        structor[procedureName as keyof Procedures] = ((handler: any) => {
-          const procedureHandler = new ProcedureHandler<any, any>(
-            procedurePath as string,
-            handler,
-            []
-          );
-          this.handlersMap.set(procedurePath, procedureHandler);
-        }) as any;
-      } else {
-        structor[procedureName as keyof ApiConstructorMap<Procedures>] =
-          {} as any;
-
-        this.buildStructor(
-          structor[procedureName] as any,
-          procedure,
-          procedurePathArr
-        );
-
-        procedurePathArr.pop();
-      }
-    }
+  protected methodStructor(procedurePath: string): (handler: any) => any {
+    return (handler: any) => {
+      const procedureHandler = new ProcedureHandler<any, any>(
+        procedurePath as string,
+        handler,
+        []
+      );
+      this.handlersMap.set(procedurePath, procedureHandler);
+    };
   }
 
   public getHandler(procedurePath: string) {
