@@ -8,6 +8,8 @@ export class ZClient<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
+  protected readonly clientId: string = 'randomGenerated';
+
   private caller: ZClientApiCallerConstructor<ZAPI, Procedures>;
 
   private handler: ZClientApiHandlerConstructor<ZAPI, Procedures>;

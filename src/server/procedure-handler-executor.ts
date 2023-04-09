@@ -1,14 +1,11 @@
 import { SchemaDef, SchemaDefToType } from '../core';
-import { ZServerExecutionContext } from './request-context';
+import { Context } from './request-context';
 import { ProcedureHandlerFunction } from './server-api-handler-constructor';
 import { ProcedureHandlerError } from './server-errors';
 
-export class ProcedureHandlerExecutor<
-  I extends SchemaDef,
-  O extends SchemaDef
-> {
+export class ProcedureExecutor<I extends SchemaDef, O extends SchemaDef> {
   private handler!: (
-    ctx: ZServerExecutionContext<SchemaDefToType<I>>
+    ctx: Context<SchemaDefToType<I>>
   ) => Promise<SchemaDefToType<O>>;
 
   private middlewares!: ProcedureHandlerFunction<SchemaDefToType<I>, O>[];
@@ -16,9 +13,7 @@ export class ProcedureHandlerExecutor<
   constructor(private name: string) {}
 
   setHandler(
-    handler: (
-      ctx: ZServerExecutionContext<SchemaDefToType<I>>
-    ) => Promise<SchemaDefToType<O>>
+    handler: (ctx: Context<SchemaDefToType<I>>) => Promise<SchemaDefToType<O>>
   ) {
     this.handler = handler;
   }
@@ -29,9 +24,7 @@ export class ProcedureHandlerExecutor<
     this.middlewares = middlewares;
   }
 
-  async run(
-    ctx: ZServerExecutionContext<SchemaDefToType<I>>
-  ): Promise<SchemaDefToType<O>> {
+  async run(ctx: Context<SchemaDefToType<I>>): Promise<SchemaDefToType<O>> {
     try {
       const output = await this.handler(ctx);
       return output as SchemaDefToType<O>;
@@ -41,7 +34,7 @@ export class ProcedureHandlerExecutor<
     }
   }
 
-  async runMiddlewares(ctx: ZServerExecutionContext<SchemaDefToType<I>>) {
+  async runMiddlewares(ctx: Context<SchemaDefToType<I>>) {
     if (!Array.isArray(this.middlewares)) return;
 
     for (const middie of this.middlewares) {

@@ -1,8 +1,6 @@
 import { ApiConstructor } from '../core/api-constructor';
 import { ApiProceduresMap, ApiProceduresSchemas } from '../core/api-definition';
-import { PROTOBUF_CONTENT_TYPE } from '../core/constants';
 import { SchemaDefToType } from '../core/schema-types';
-import { SSEEventPacket } from '../core/sse-types';
 import { ZRPC } from '../zrpc';
 import { ClientConfig } from './client.types';
 
@@ -39,36 +37,12 @@ export class ZClientApiHandlerConstructor<
   ): (handler: any) => Promise<any> {
     return async (handler) => {
       this.handlers.set(procedurePath, handler);
-      this.connectSSE();
+      this.initiateWebSocketConnection();
     };
   }
 
-  private connectSSE(): EventSource {
-    const sse = new EventSource(`${this.getBaseUrl()}/sse`);
-
-    sse.addEventListener('message', async (ev) => {
-      //pseudo
-      const data = ev.data as SSEEventPacket;
-      console.log(data);
-
-      const handler = this.handlers.get(data.procedurePathName);
-      const result = await handler(ev.data);
-
-      if (result !== void 0) {
-        this.callServerCallback(result);
-      }
-    });
-
-    return sse;
-  }
-
-  private async callServerCallback(data: any): Promise<void> {
-    const sseCallbackEndpoint = `${this.getBaseUrl()}/_zrpc_sse_callback`;
-
-    fetch(sseCallbackEndpoint, {
-      method: PROTOBUF_CONTENT_TYPE,
-      body: data,
-    });
+  private initiateWebSocketConnection() {
+    // TODO
   }
 
   private getBaseUrl(): string {

@@ -8,18 +8,18 @@ import {
 import { ApiConstructor } from '../core/api-constructor';
 import { ProcedureNotFound } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
-import { ProcedureHandlerExecutor } from './procedure-handler-executor';
-import { ZServerExecutionContext } from './request-context';
+import { ProcedureExecutor } from './procedure-handler-executor';
+import { Context } from './request-context';
 
 export type ProcedureHandlerFunction<
   Input extends object,
   Output,
-  CTX = ZServerExecutionContext<Input>
+  CTX = Context<Input>
 > = (ctx: CTX) => AcceptPromise<Output>;
 
 export type ProcedureMiddlewareHandler<
   Input extends object,
-  CTX = ZServerExecutionContext<Input>
+  CTX = Context<Input>
 > = ProcedureHandlerFunction<Input, void, CTX>;
 
 export type ProcedureParameters<Input> = {
@@ -31,7 +31,7 @@ export type ProcedureParameters<Input> = {
 type ProcedureMiddlewareSetter<
   HandlerSet,
   Schema extends ApiProceduresSchemas,
-  CTX = ZServerExecutionContext<Schema['input']>
+  CTX = Context<Schema['input']>
 > = {
   use: (
     middlewareHandler: ProcedureMiddlewareHandler<
@@ -43,14 +43,14 @@ type ProcedureMiddlewareSetter<
 
 type HandlerSetter<
   Schema extends ApiProceduresSchemas,
-  CTX = ZServerExecutionContext<Schema['input']>
+  CTX = Context<Schema['input']>
 > = (
   handler: (ctx: CTX) => AcceptPromise<SchemaDefToType<Schema['output']>>
 ) => void;
 
 type HandlerSetWrapper<
   Schema extends ApiProceduresSchemas,
-  CTX = ZServerExecutionContext<SchemaDefToType<Schema['input']>>
+  CTX = Context<SchemaDefToType<Schema['input']>>
 > = HandlerSetter<Schema, CTX> &
   ProcedureMiddlewareSetter<HandlerSetter<Schema, CTX>, Schema, CTX>;
 
@@ -64,7 +64,7 @@ export type ApiConstructorMap<
     : never;
 };
 
-type HandlerMap = Map<string, ProcedureHandlerExecutor<any, any>>;
+type HandlerMap = Map<string, ProcedureExecutor<any, any>>;
 
 export class ServerApiHandlerConstructor<
   ZAPI extends ZRPC,
@@ -81,7 +81,7 @@ export class ServerApiHandlerConstructor<
   }
 
   protected methodStructor(procedurePath: string): (handler: any) => any {
-    const procedureHandler = new ProcedureHandlerExecutor<any, any>(
+    const procedureHandler = new ProcedureExecutor<any, any>(
       procedurePath as string
     );
 

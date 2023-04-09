@@ -6,4 +6,5 @@ export interface ClientConfig {
    */
   url?: string;
   requestBuilder?: () => AcceptPromise<RequestInit>;
+  getClientId?: () => string;
 }

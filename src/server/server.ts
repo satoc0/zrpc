@@ -10,7 +10,7 @@ import { ZRPC } from '../zrpc';
 import { ServerApiHandlerConstructor } from './server-api-handler-constructor';
 import { BodyReadError } from './server-errors';
 import { ServerConfig } from './server.types';
-import { ZServerExecutionContext } from './request-context';
+import { Context } from './request-context';
 
 export class ZServer<
   ZAPI extends ZRPC,
@@ -44,7 +44,7 @@ export class ZServer<
       const procedureData = this.def.proceduresDataParsers.get(procedureName);
       const inputDecodedData = procedureData.input.decode(buffer);
 
-      const context = new ZServerExecutionContext(req, res, inputDecodedData);
+      const context = new Context(req, res, inputDecodedData);
       res.writeProcessing();
 
       await this.runMiddlewares(context);
@@ -59,7 +59,7 @@ export class ZServer<
     }
   }
 
-  private async runMiddlewares(ctx: ZServerExecutionContext<any>) {
+  private async runMiddlewares(ctx: Context<any>) {
     if (!this.config || !Array.isArray(this.config.middlewares)) return;
 
     for (const midde of this.config.middlewares) {

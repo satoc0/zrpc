@@ -8,6 +8,8 @@ import { api } from './index';
   server.handle.account.get.use((ctx) => {
     ctx.set('a', 'abc');
 
+    ctx.client.account.update();
+
     console.log({ ctx: ctx.input.name });
   })((ctx) => {
     return { data: ctx.get('a') + ctx.input.name };

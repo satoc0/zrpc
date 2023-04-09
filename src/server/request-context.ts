@@ -2,7 +2,9 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 const reservedKeys = ['req', 'res', 'input'];
 
-export class ZServerExecutionContext<Input extends object> extends Map {
+export class Context<Input extends object> extends Map {
+  public client: any;
+
   constructor(
     public readonly req: IncomingMessage,
     public readonly res: ServerResponse,

@@ -1,15 +1,13 @@
 <center>
 <h1>ZRPC</h1>
-Another way to make communication between client a server.
+Fast, easy and type safety client-server-client communication.
 
 <a href="#install">Install</a> - <a href="#usage">Usage</a> - <a href="#benchmark">Benchmarks</a>
 
 </center>
 <br>
 
-ZRPC is inspired by tRPC, but aims to improve the performance of applications by utilizing the protobuf serialization format and keep type safety.
-
-The use of protobuf over JSON offers more efficient serialization in terms of time and size, thats improve the performance of applications and save resources.
+ZRPC provides high-performance, bidirectional client-server communication with a focus on simplicity of implementation. Inspired by tRPC, ZRPC utilizes protobuf serialization to achieve high performance, while ensuring type safety is maintained.
 
 **Not production-ready, can have breaking changes over time.** <br>
 
