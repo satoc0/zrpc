@@ -1,31 +1,17 @@
 import { Server } from 'http';
+import { ZServer } from '../src';
 import { api } from './index';
-import { SchemaDefToType, ZServer } from '../src';
-import { ProcedureHandlerFunction } from '../src/server/server-api-constructor';
 
 (async () => {
   const server = new ZServer(api);
 
-  server.api.account.get.use((ctx) => {
+  server.handle.account.get.use((ctx) => {
     ctx.set('a', 'abc');
 
     console.log({ ctx: ctx.input.name });
   })((ctx) => {
     return { data: ctx.get('a') + ctx.input.name };
   });
-  // server.api.account.get.use((ctx) => {
-
-  // })((params) => {
-  //   const { name } = params.input;
-  //   return { data: name };
-  // });
-
-  // server.api.account.get.use(({ req, res }) => {
-  //   console.log(req.url);
-  // })((params) => {
-  //   const { name } = params.input;
-  //   return { data: name };
-  // });
 
   const httpServer = new Server(server.entry);
   const serverPort = 3000;

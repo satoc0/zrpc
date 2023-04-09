@@ -1,7 +1,7 @@
 import { ApiConstructor } from '../core/api-constructor';
 import { ApiProceduresMap, ApiProceduresSchemas } from '../core/api-definition';
 import { ZError } from '../core/core-errors';
-import { SchemaDefToType } from '../core/types';
+import { SchemaDefToType } from '../core/schema-types';
 import { ZRPC } from '../zrpc';
 import { ZClientRequest } from './client-request';
 import { ClientConfig } from './client.types';
@@ -18,16 +18,16 @@ export type ApiConstructorMap<
     : never;
 };
 
-export class ZClientApiConstructor<
+export class ZClientApiCallerConstructor<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > extends ApiConstructor {
-  public readonly structor: ApiConstructorMap<Procedures> =
+  public readonly methods: ApiConstructorMap<Procedures> =
     {} as ApiConstructorMap<Procedures>;
 
   constructor(protected def: ZAPI, private config?: ClientConfig) {
     super();
-    this.buildStructor(this.structor, this.def.apiDefinition.procedures);
+    this.buildStructor(this.methods, this.def.apiDefinition.procedures);
   }
 
   protected methodStructor(

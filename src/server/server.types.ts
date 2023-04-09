@@ -1,4 +1,4 @@
-import { ProcedureMiddlewareHandler } from './server-api-constructor';
+import { ProcedureMiddlewareHandler } from './server-api-handler-constructor';
 
 export type ServerConfig = {
   middlewares?: ProcedureMiddlewareHandler<object, any>[];

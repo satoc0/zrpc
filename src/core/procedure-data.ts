@@ -13,7 +13,11 @@ import {
 } from './core-errors';
 import { SchemaBase } from './schemas';
 import { rootConstructor } from './type-constructor';
-import { ProcedureDataOperation, ProcedureDataSide, Properties } from './types';
+import {
+  ProcedureDataOperation,
+  ProcedureDataSide,
+  Properties,
+} from './schema-types';
 
 export function encodeByClassSchema<
   Schema extends typeof SchemaBase,

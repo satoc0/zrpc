@@ -65,7 +65,7 @@ afterEach(async () => {
 });
 
 it('should handle procedure', async () => {
-  server.api.BasicAddJSON(async ({ input: { left, right } }) => {
+  server.handle.BasicAddJSON(async ({ input: { left, right } }) => {
     return { result: left + right };
   });
 
@@ -74,7 +74,7 @@ it('should handle procedure', async () => {
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
 
-  const response = await client.api.BasicAddJSON({ left, right });
+  const response = await client.call.BasicAddJSON({ left, right });
 
   expect(response.result).toEqual(left + right);
   expect(typeof response.result === 'number').toBeTruthy();
@@ -83,7 +83,7 @@ it('should handle procedure', async () => {
 it('should treat error in procedure handle', async () => {
   const errorMessage = 'Error message';
 
-  server.api.BasicAddJSON(async () => {
+  server.handle.BasicAddJSON(async () => {
     throw new Error(errorMessage);
   });
 
@@ -92,7 +92,7 @@ it('should treat error in procedure handle', async () => {
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
 
-  await client.api.BasicAddJSON({ left, right }).catch((e) => {
+  await client.call.BasicAddJSON({ left, right }).catch((e) => {
     expect(e).toBeInstanceOf(ZError);
     expect(e.message).toBe('Error: ' + errorMessage);
     expect(e.errorCode).toBe('procedure-handler');
@@ -131,7 +131,7 @@ it('should throw not found procedure handler', async () => {
 it('should treat correctly body parser error', async () => {
   const localServer = new ZServer(api);
 
-  localServer.api.BasicAddJSON(async () => {
+  localServer.handle.BasicAddJSON(async () => {
     return { result: 1 };
   });
 
@@ -173,7 +173,7 @@ it('should execute procedure middlewares', async () => {
   const inputStr = 'inputStr';
   const reqMutationStr = 'yes_req_mutation';
 
-  const handler = server.api.stringOutput.use(({ req }) => {
+  const handler = server.handle.stringOutput.use(({ req }) => {
     (req as any).reqMutationStr = reqMutationStr;
   });
 
@@ -183,7 +183,7 @@ it('should execute procedure middlewares', async () => {
 
   httpServer.on('request', (req, res) => server.entry(req, res));
 
-  const response = await client.api.stringOutput({ str: inputStr });
+  const response = await client.call.stringOutput({ str: inputStr });
 
   expect(response.str).toBe(reqMutationStr + inputStr);
 });

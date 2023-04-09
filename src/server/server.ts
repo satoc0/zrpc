@@ -7,7 +7,7 @@ import {
 } from '../core/constants';
 import { ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
-import { ServerApiConstructor } from './server-api-constructor';
+import { ServerApiHandlerConstructor } from './server-api-handler-constructor';
 import { BodyReadError } from './server-errors';
 import { ServerConfig } from './server.types';
 import { ZServerExecutionContext } from './request-context';
@@ -16,14 +16,14 @@ export class ZServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  private apiConstructor!: ServerApiConstructor<ZAPI, Procedures>;
+  private apiConstructor!: ServerApiHandlerConstructor<ZAPI, Procedures>;
 
   constructor(private def: ZAPI, private config?: ServerConfig) {
-    this.apiConstructor = new ServerApiConstructor(def);
+    this.apiConstructor = new ServerApiHandlerConstructor(def);
   }
 
-  get api() {
-    return this.apiConstructor.structor;
+  get handle() {
+    return this.apiConstructor.methods;
   }
 
   public async entry(

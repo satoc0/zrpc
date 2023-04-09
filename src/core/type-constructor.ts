@@ -1,6 +1,6 @@
 import { Field, Type } from 'protobufjs/light';
 import { SchemaDefinition, SchemaTypes } from './api-definition';
-import { ProtobufTypesWithOptional } from './types';
+import { ProtobufTypesWithOptional } from './schema-types';
 
 function typeOrFieldConstructor(
   name: string,

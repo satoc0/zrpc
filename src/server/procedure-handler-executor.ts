@@ -1,6 +1,6 @@
 import { SchemaDef, SchemaDefToType } from '../core';
 import { ZServerExecutionContext } from './request-context';
-import { ProcedureHandlerFunction } from './server-api-constructor';
+import { ProcedureHandlerFunction } from './server-api-handler-constructor';
 import { ProcedureHandlerError } from './server-errors';
 
 export class ProcedureHandlerExecutor<

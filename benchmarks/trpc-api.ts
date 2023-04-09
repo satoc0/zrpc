@@ -8,16 +8,44 @@ import { AddressInfo } from 'node:net';
 export function createServer() {
   const t = initTRPC.create({});
 
+  const complexSchema = z.object({
+    str: z.string(),
+    num: z.number(),
+    nested1: z.object({
+      str: z.string(),
+      num: z.number(),
+      nested2: z.object({
+        str: z.string(),
+        num: z.number(),
+        nested3: z.object({
+          str: z.string(),
+          num: z.number(),
+        }),
+      }),
+    }),
+  });
+
   const router = t.router({
-    sum: t.procedure
+    simple: t.procedure
       .input(
         z.object({
           left: z.number(),
           right: z.number(),
         })
       )
+      .output(
+        z.object({
+          result: z.number(),
+        })
+      )
       .query(({ input }) => {
         return { result: input.left + input.right };
+      }),
+    complex: t.procedure
+      .input(complexSchema)
+      .output(complexSchema)
+      .query(({ input }) => {
+        return input;
       }),
   });
 

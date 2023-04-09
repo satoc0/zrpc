@@ -4,7 +4,7 @@ import {
   Message,
   Type,
 } from 'protobufjs/light';
-import { FieldOptions, ProtobufFieldTypes } from './types';
+import { FieldOptions, ProtobufFieldTypes } from './schema-types';
 
 const autoincrementFieldIdSymbol = Symbol('lastFieldId');
 const startFieldIdOffset = 0;

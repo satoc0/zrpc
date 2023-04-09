@@ -12,7 +12,7 @@ export type ApiConstructorMapAbstraction<
 };
 
 export abstract class ApiConstructor {
-  protected abstract readonly structor: ApiConstructorMapAbstraction;
+  protected abstract readonly methods: ApiConstructorMapAbstraction;
 
   protected buildStructor(
     structor: ApiConstructorMapAbstraction,

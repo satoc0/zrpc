@@ -1,6 +1,6 @@
 import { SchemaDefinition } from './api-definition';
 import { rootConstructor } from './type-constructor';
-import { ProcedureDataOperation, ProcedureDataSide } from './types';
+import { ProcedureDataOperation, ProcedureDataSide } from './schema-types';
 
 export interface ZErrorData {
   isZError: boolean;

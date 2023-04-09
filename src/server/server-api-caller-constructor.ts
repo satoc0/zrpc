@@ -66,18 +66,18 @@ export type ApiConstructorMap<
 
 type HandlerMap = Map<string, ProcedureHandlerExecutor<any, any>>;
 
-export class ServerApiConstructor<
+export class ServerApiHandlerConstructor<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > extends ApiConstructor {
   private handlersMap: HandlerMap = new Map();
 
-  public readonly structor: ApiConstructorMap<Procedures> =
+  public readonly methods: ApiConstructorMap<Procedures> =
     {} as ApiConstructorMap<Procedures>;
 
   constructor(private def: ZAPI) {
     super();
-    this.buildStructor(this.structor, this.def.apiDefinition.procedures);
+    this.buildStructor(this.methods, this.def.apiDefinition.procedures);
   }
 
   protected methodStructor(procedurePath: string): (handler: any) => any {
