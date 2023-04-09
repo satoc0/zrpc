@@ -35,9 +35,11 @@ export class ZServer<
       procedurePathArr.shift();
 
       const procedureName: string = procedurePathArr.join('/');
+
       const handler = this.apiConstructor.getHandler(procedureName);
 
       const buffer = await this.readBuffer(req, procedureName);
+
       const procedureData = this.def.proceduresDataParsers.get(procedureName);
       const inputDecodedData = procedureData.input.decode(buffer);
 
@@ -46,7 +48,7 @@ export class ZServer<
       await this.runMiddlewares(req, res, inputDecodedData);
       await handler.runMiddlewares(req, res, inputDecodedData);
 
-      const handlerResult = await handler.run(inputDecodedData);
+      const handlerResult = await handler.run(req, res, inputDecodedData);
       const outputBuffer = procedureData.output.encode(handlerResult);
 
       this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));

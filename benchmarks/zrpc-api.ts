@@ -1,37 +1,39 @@
-import { Server } from 'node:http';
+import { createServer as createHttpServer } from 'node:http';
 import ZRPC, { ZClient, ZServer } from '../src';
 import { AddressInfo } from 'node:net';
 
-export const api = new ZRPC({
-  procedures: {
-    sum: {
-      input: {
-        left: 'int32',
-        right: 'int32',
-      },
-      output: {
-        result: 'int64',
+export function createServer() {
+  const api = new ZRPC({
+    procedures: {
+      sum: {
+        input: {
+          left: 'int32',
+          right: 'int32',
+        },
+        output: {
+          result: 'int32',
+        },
       },
     },
-  },
-});
+  });
 
-const zServerPort = 3001;
-const server = new ZServer(api);
+  const server = new ZServer(api);
 
-const httpServer = new Server();
+  server.api.sum(({ input: { left, right } }) => {
+    return { result: left + right };
+  });
 
-server.api.sum(({ left, right }) => {
-  return { result: left + right };
-});
+  const httpServer = createHttpServer((req, res) => server.entry(req, res));
+  httpServer.listen();
 
-httpServer.listen(zServerPort, async () => {});
+  return { api, httpServer };
+}
 
-const addr = httpServer.address() as AddressInfo;
-const serverPort = addr.port;
+export const { api, httpServer } = createServer();
+export const port = (httpServer.address() as AddressInfo).port;
 
 export const zrpcClient = new ZClient(api, {
-  url: `http://localhost:${serverPort}`,
+  url: `http://localhost:${port}`,
   requestBuilder: () => {
     return {
       headers: [['Connection', 'close']],

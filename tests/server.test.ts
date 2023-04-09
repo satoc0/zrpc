@@ -20,6 +20,14 @@ export const api = new ZRPC({
         result: 'int32',
       },
     },
+    stringOutput: {
+      input: {
+        str: 'string',
+      },
+      output: {
+        str: 'string',
+      },
+    },
   },
 });
 
@@ -57,7 +65,7 @@ afterEach(async () => {
 });
 
 it('should handle procedure', async () => {
-  server.api.BasicAddJSON(async ({ left, right }) => {
+  server.api.BasicAddJSON(async ({ input: { left, right } }) => {
     return { result: left + right };
   });
 
@@ -69,6 +77,7 @@ it('should handle procedure', async () => {
   const response = await client.api.BasicAddJSON({ left, right });
 
   expect(response.result).toEqual(left + right);
+  expect(typeof response.result === 'number').toBeTruthy();
 });
 
 it('should treat error in procedure handle', async () => {
@@ -158,4 +167,23 @@ it('should treat correctly body parser error', async () => {
   expect(resEnd.mock.calls[0][0]).toEqual(
     bodyReadErrorError.getResponseBuffer()
   );
+});
+
+it('should execute procedure middlewares', async () => {
+  const inputStr = 'inputStr';
+  const reqMutationStr = 'yes_req_mutation';
+
+  const handler = server.api.stringOutput.use(({ req }) => {
+    (req as any).reqMutationStr = reqMutationStr;
+  });
+
+  handler(({ req, input }) => {
+    return { str: (req as any).reqMutationStr + input.str };
+  });
+
+  httpServer.on('request', (req, res) => server.entry(req, res));
+
+  const response = await client.api.stringOutput({ str: inputStr });
+
+  expect(response.str).toBe(reqMutationStr + inputStr);
 });

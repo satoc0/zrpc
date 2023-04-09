@@ -7,7 +7,7 @@ export class ZClient<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  apiConstructor: ZClientApiConstructor<ZAPI, Procedures>;
+  private apiConstructor: ZClientApiConstructor<ZAPI, Procedures>;
 
   constructor(private def: ZAPI, private config?: ClientConfig) {
     this.apiConstructor = new ZClientApiConstructor(this.def, this.config);
@@ -15,5 +15,9 @@ export class ZClient<
 
   get api() {
     return this.apiConstructor.structor;
+  }
+
+  updateConfig(config: Partial<ClientConfig>) {
+    this.config = { ...this.config, ...config };
   }
 }

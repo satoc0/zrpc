@@ -1,3 +1,4 @@
+import { IncomingMessage, ServerResponse } from 'http';
 import {
   AcceptPromise,
   ApiProceduresMap,
@@ -7,23 +8,52 @@ import {
 import { ApiConstructor } from '../core/api-constructor';
 import { ProcedureNotFound } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
-import { ProcedureHandler } from './procedure-handler';
+import { ProcedureHandlerExecutor } from './procedure-handler-executor';
+
+export type ProcedureHandlerFunction<Input, Output> = (
+  params: ProcedureParameters<Input>
+) => AcceptPromise<Output>;
+
+export type ProcedureMiddlewareHandler<Input> = ProcedureHandlerFunction<
+  Input,
+  void
+>;
+
+export type ProcedureParameters<Input> = {
+  req: IncomingMessage;
+  res: ServerResponse;
+  input: Input;
+};
+
+type ProcedureMiddlewareSetter<
+  HandlerSet,
+  Schema extends ApiProceduresSchemas
+> = {
+  use: (
+    middlewareHandler: ProcedureMiddlewareHandler<
+      SchemaDefToType<Schema['input']>
+    >
+  ) => HandlerSet;
+};
+
+type HandlerSetter<Schema extends ApiProceduresSchemas> = (
+  handler: (
+    params: ProcedureParameters<SchemaDefToType<Schema['input']>>
+  ) => AcceptPromise<SchemaDefToType<Schema['output']>>
+) => void;
 
 export type ApiConstructorMap<
   Root extends ApiProceduresMap = ApiProceduresMap
 > = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
-    ? (
-        handler: (
-          input: SchemaDefToType<Root[Key]['input']>
-        ) => AcceptPromise<SchemaDefToType<Root[Key]['output']>>
-      ) => void
+    ? HandlerSetter<Root[Key]> &
+        ProcedureMiddlewareSetter<HandlerSetter<Root[Key]>, Root[Key]>
     : Root[Key] extends ApiProceduresMap
     ? ApiConstructorMap<Root[Key]>
     : never;
 };
 
-type HandlerMap = Map<string, ProcedureHandler<any, any>>;
+type HandlerMap = Map<string, ProcedureHandlerExecutor<any, any>>;
 
 export class ServerApiConstructor<
   ZAPI extends ZRPC,
@@ -40,14 +70,23 @@ export class ServerApiConstructor<
   }
 
   protected methodStructor(procedurePath: string): (handler: any) => any {
-    return (handler: any) => {
-      const procedureHandler = new ProcedureHandler<any, any>(
-        procedurePath as string,
-        handler,
-        []
-      );
+    const procedureHandler = new ProcedureHandlerExecutor<any, any>(
+      procedurePath as string
+    );
+
+    const handlerSet = (handler: ProcedureHandlerFunction<any, any>) => {
+      procedureHandler.setHandler(handler);
       this.handlersMap.set(procedurePath, procedureHandler);
     };
+
+    handlerSet.use = (handler: ProcedureHandlerFunction<unknown, unknown>) => {
+      procedureHandler.setMiddlewares([handler]);
+      this.handlersMap.set(procedurePath, procedureHandler);
+
+      return handlerSet;
+    };
+
+    return handlerSet;
   }
 
   public getHandler(procedurePath: string) {
