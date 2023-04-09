@@ -1,11 +1,5 @@
-import { IncomingMessage, ServerResponse } from 'node:http';
-
-export type MiddlewareHandler<T extends object> = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  data: T
-) => Promise<void>;
+import { ProcedureMiddlewareHandler } from './server-api-constructor';
 
 export type ServerConfig = {
-  middlewares?: MiddlewareHandler<object>[];
+  middlewares?: ProcedureMiddlewareHandler<object, any>[];
 };

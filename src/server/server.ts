@@ -10,6 +10,7 @@ import { ZRPC } from '../zrpc';
 import { ServerApiConstructor } from './server-api-constructor';
 import { BodyReadError } from './server-errors';
 import { ServerConfig } from './server.types';
+import { ZServerExecutionContext } from './request-context';
 
 export class ZServer<
   ZAPI extends ZRPC,
@@ -43,12 +44,13 @@ export class ZServer<
       const procedureData = this.def.proceduresDataParsers.get(procedureName);
       const inputDecodedData = procedureData.input.decode(buffer);
 
+      const context = new ZServerExecutionContext(req, res, inputDecodedData);
       res.writeProcessing();
 
-      await this.runMiddlewares(req, res, inputDecodedData);
-      await handler.runMiddlewares(req, res, inputDecodedData);
+      await this.runMiddlewares(context);
+      await handler.runMiddlewares(context);
 
-      const handlerResult = await handler.run(req, res, inputDecodedData);
+      const handlerResult = await handler.run(context);
       const outputBuffer = procedureData.output.encode(handlerResult);
 
       this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
@@ -57,15 +59,11 @@ export class ZServer<
     }
   }
 
-  private async runMiddlewares(
-    req: IncomingMessage,
-    res: ServerResponse,
-    data: object
-  ) {
+  private async runMiddlewares(ctx: ZServerExecutionContext<any>) {
     if (!this.config || !Array.isArray(this.config.middlewares)) return;
 
     for (const midde of this.config.middlewares) {
-      await midde(req, res, data);
+      await midde(ctx);
     }
   }
 

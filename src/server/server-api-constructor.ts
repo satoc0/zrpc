@@ -9,15 +9,18 @@ import { ApiConstructor } from '../core/api-constructor';
 import { ProcedureNotFound } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ProcedureHandlerExecutor } from './procedure-handler-executor';
+import { ZServerExecutionContext } from './request-context';
 
-export type ProcedureHandlerFunction<Input, Output> = (
-  params: ProcedureParameters<Input>
-) => AcceptPromise<Output>;
+export type ProcedureHandlerFunction<
+  Input extends object,
+  Output,
+  CTX = ZServerExecutionContext<Input>
+> = (ctx: CTX) => AcceptPromise<Output>;
 
-export type ProcedureMiddlewareHandler<Input> = ProcedureHandlerFunction<
-  Input,
-  void
->;
+export type ProcedureMiddlewareHandler<
+  Input extends object,
+  CTX = ZServerExecutionContext<Input>
+> = ProcedureHandlerFunction<Input, void, CTX>;
 
 export type ProcedureParameters<Input> = {
   req: IncomingMessage;
@@ -27,27 +30,35 @@ export type ProcedureParameters<Input> = {
 
 type ProcedureMiddlewareSetter<
   HandlerSet,
-  Schema extends ApiProceduresSchemas
+  Schema extends ApiProceduresSchemas,
+  CTX = ZServerExecutionContext<Schema['input']>
 > = {
   use: (
     middlewareHandler: ProcedureMiddlewareHandler<
-      SchemaDefToType<Schema['input']>
+      SchemaDefToType<Schema['input']>,
+      CTX
     >
   ) => HandlerSet;
 };
 
-type HandlerSetter<Schema extends ApiProceduresSchemas> = (
-  handler: (
-    params: ProcedureParameters<SchemaDefToType<Schema['input']>>
-  ) => AcceptPromise<SchemaDefToType<Schema['output']>>
+type HandlerSetter<
+  Schema extends ApiProceduresSchemas,
+  CTX = ZServerExecutionContext<Schema['input']>
+> = (
+  handler: (ctx: CTX) => AcceptPromise<SchemaDefToType<Schema['output']>>
 ) => void;
+
+type HandlerSetWrapper<
+  Schema extends ApiProceduresSchemas,
+  CTX = ZServerExecutionContext<SchemaDefToType<Schema['input']>>
+> = HandlerSetter<Schema, CTX> &
+  ProcedureMiddlewareSetter<HandlerSetter<Schema, CTX>, Schema, CTX>;
 
 export type ApiConstructorMap<
   Root extends ApiProceduresMap = ApiProceduresMap
 > = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
-    ? HandlerSetter<Root[Key]> &
-        ProcedureMiddlewareSetter<HandlerSetter<Root[Key]>, Root[Key]>
+    ? HandlerSetWrapper<Root[Key]>
     : Root[Key] extends ApiProceduresMap
     ? ApiConstructorMap<Root[Key]>
     : never;
@@ -79,7 +90,7 @@ export class ServerApiConstructor<
       this.handlersMap.set(procedurePath, procedureHandler);
     };
 
-    handlerSet.use = (handler: ProcedureHandlerFunction<unknown, unknown>) => {
+    handlerSet.use = (handler: ProcedureHandlerFunction<any, any>) => {
       procedureHandler.setMiddlewares([handler]);
       this.handlersMap.set(procedurePath, procedureHandler);
 

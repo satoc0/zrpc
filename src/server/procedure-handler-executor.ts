@@ -1,9 +1,6 @@
-import { IncomingMessage, ServerResponse } from 'node:http';
 import { SchemaDef, SchemaDefToType } from '../core';
-import {
-  ProcedureHandlerFunction,
-  ProcedureParameters,
-} from './server-api-constructor';
+import { ZServerExecutionContext } from './request-context';
+import { ProcedureHandlerFunction } from './server-api-constructor';
 import { ProcedureHandlerError } from './server-errors';
 
 export class ProcedureHandlerExecutor<
@@ -11,32 +8,32 @@ export class ProcedureHandlerExecutor<
   O extends SchemaDef
 > {
   private handler!: (
-    params: ProcedureParameters<SchemaDefToType<I>>
+    ctx: ZServerExecutionContext<SchemaDefToType<I>>
   ) => Promise<SchemaDefToType<O>>;
 
-  private middlewares!: ProcedureHandlerFunction<I, O>[];
+  private middlewares!: ProcedureHandlerFunction<SchemaDefToType<I>, O>[];
 
   constructor(private name: string) {}
 
   setHandler(
     handler: (
-      params: ProcedureParameters<SchemaDefToType<I>>
+      ctx: ZServerExecutionContext<SchemaDefToType<I>>
     ) => Promise<SchemaDefToType<O>>
   ) {
     this.handler = handler;
   }
 
-  setMiddlewares(middlewares: ProcedureHandlerFunction<I, O>[]) {
+  setMiddlewares(
+    middlewares: ProcedureHandlerFunction<SchemaDefToType<I>, O>[]
+  ) {
     this.middlewares = middlewares;
   }
 
   async run(
-    req: IncomingMessage,
-    res: ServerResponse,
-    input: SchemaDefToType<I>
+    ctx: ZServerExecutionContext<SchemaDefToType<I>>
   ): Promise<SchemaDefToType<O>> {
     try {
-      const output = await this.handler({ req, res, input });
+      const output = await this.handler(ctx);
       return output as SchemaDefToType<O>;
     } catch (e) {
       const error = e as Error;
@@ -44,11 +41,11 @@ export class ProcedureHandlerExecutor<
     }
   }
 
-  async runMiddlewares(req: IncomingMessage, res: ServerResponse, input: I) {
+  async runMiddlewares(ctx: ZServerExecutionContext<SchemaDefToType<I>>) {
     if (!Array.isArray(this.middlewares)) return;
 
     for (const middie of this.middlewares) {
-      await middie({ req, res, input });
+      await middie(ctx);
     }
   }
 }
