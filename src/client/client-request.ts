@@ -20,12 +20,15 @@ export class ZClientRequest {
   async fetch(baseRrl: string, requestBase?: RequestInit): Promise<object> {
     const headers: HeadersInit = this.buildRequestHeaders(requestBase);
 
-    const response = await fetch(baseRrl + '/' + this.procedureData.name, {
-      ...requestBase,
-      headers,
-      method: 'POST',
-      body: this.procedureData.input.encode(this.rawInput),
-    });
+    const response = await fetch(
+      baseRrl + '/' + this.procedureData.procedurePathName,
+      {
+        ...requestBase,
+        headers,
+        method: 'POST',
+        body: this.procedureData.input.encode(this.rawInput),
+      }
+    );
 
     return this.handleResponse(response);
   }

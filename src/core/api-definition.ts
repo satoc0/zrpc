@@ -4,7 +4,14 @@ import { ProtobufTypesWithOptional } from './schema-types';
 export interface ApiDefinition<
   Procedures extends ApiProceduresMap = ApiProceduresMap
 > {
+  /**
+   * Define your schemas
+   */
   procedures: Procedures;
+  /**
+   * Enable bidirectional communication
+   */
+  bidirectional?: boolean;
 }
 
 export type SchemaDef = typeof SchemaBase | SchemaDefinition;

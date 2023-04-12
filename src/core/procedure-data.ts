@@ -11,13 +11,18 @@ import {
   ParserDataError,
   ProcedureParserNotFound,
 } from './core-errors';
-import { SchemaBase } from './schemas';
-import { rootConstructor } from './type-constructor';
 import {
   ProcedureDataOperation,
   ProcedureDataSide,
   Properties,
 } from './schema-types';
+import { SchemaBase } from './schemas';
+import {
+  MessageType,
+  PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE,
+  PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME,
+  protobufProcedureTypeConstructor,
+} from './message-type-constructors';
 
 export function encodeByClassSchema<
   Schema extends typeof SchemaBase,
@@ -44,9 +49,11 @@ export function decodeByClassSchema<O extends object>(
 }
 
 abstract class ZProcedureDataParserSchema {
-  protected name!: string;
+  protected readonly procedureName!: string;
 
-  protected side!: ProcedureDataSide;
+  protected readonly schemaName!: string;
+
+  protected readonly side!: ProcedureDataSide;
 
   protected throwError(
     e: Error,
@@ -54,7 +61,7 @@ abstract class ZProcedureDataParserSchema {
     data: unknown
   ): never {
     throw new ParserDataError(
-      this.name,
+      this.schemaName,
       this.side,
       _process,
       e.name,
@@ -65,23 +72,44 @@ abstract class ZProcedureDataParserSchema {
 
   abstract encode(data: object): Uint8Array;
   abstract decode(buffer: Buffer): object;
+
+  populateDefaultMeta(targetObject: any) {
+    targetObject[PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE.fieldName] =
+      MessageType.Communication;
+    targetObject[PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME.fieldName] =
+      this.procedureName;
+  }
+
+  cleanUpMetadata(targetObject: any) {
+    delete targetObject[PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE.fieldName];
+    delete targetObject[PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME.fieldName];
+  }
 }
 
 export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSchema {
   private schema!: Type;
 
   constructor(
+    protected readonly procedureName: string,
     protected readonly side: ProcedureDataSide,
-    protected readonly name: string,
+    protected readonly schemaName: string,
     schemaDefinition: SchemaDefinition
   ) {
     super();
 
-    this.schema = rootConstructor(side, schemaDefinition);
+    this.schema = protobufProcedureTypeConstructor(
+      side,
+      schemaName,
+      schemaDefinition
+    );
   }
 
   public encode(data: object): Uint8Array {
     try {
+      const workObject = structuredClone(data);
+
+      this.populateDefaultMeta(workObject);
+
       const message = this.schema.create(data);
       const buffer = this.schema.encode(message).finish();
       return buffer;
@@ -90,10 +118,16 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
     }
   }
 
-  public decode(buffer: Buffer): object {
+  public decode(buffer: Buffer, cleanUpMetadata = true): object {
     try {
       const message = this.schema.decode(buffer);
-      return message.toJSON();
+      const decodedObject = message.toJSON();
+
+      if (cleanUpMetadata) {
+        this.cleanUpMetadata(decodedObject);
+      }
+
+      return decodedObject;
     } catch (e) {
       this.throwError(e as Error, ProcedureDataOperation.Decode, buffer);
     }
@@ -102,8 +136,9 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
 
 export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
   constructor(
+    protected procedurePathName: string,
     protected side: ProcedureDataSide,
-    protected name: string,
+    protected schemaName: string,
     private schema: typeof SchemaBase
   ) {
     super();
@@ -111,6 +146,10 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
 
   public encode(data: object): Uint8Array {
     try {
+      const workObject = structuredClone(data);
+
+      this.populateDefaultMeta(workObject);
+
       const result = encodeByClassSchema(this.schema, data);
       return result;
     } catch (e) {
@@ -137,15 +176,18 @@ export class ZProcedureDataParser {
 
   public readonly output!: ZProcedureDataParserSchema;
 
-  constructor(public readonly name: string, schemas: ApiProceduresSchemas) {
+  constructor(
+    public readonly procedurePathName: string,
+    schemas: ApiProceduresSchemas
+  ) {
     this.input = this.createSchemaParserInstance(
       ProcedureDataSide.Input,
-      name,
+      procedurePathName,
       schemas.input
     );
     this.output = this.createSchemaParserInstance(
       ProcedureDataSide.Output,
-      name,
+      procedurePathName,
       schemas.output
     );
   }
@@ -157,19 +199,19 @@ export class ZProcedureDataParser {
   ): ZProcedureDataParserSchema {
     return schema.constructor.name === 'Object'
       ? new ZProcedureDataSchemaDefinitionParser(
+          this.procedurePathName,
           side,
           name,
           schema as SchemaDefinition
         )
-      : new ZProcedureDataSchemaParser(side, name, schema as typeof SchemaBase);
+      : new ZProcedureDataSchemaParser(
+          this.procedurePathName,
+          side,
+          name,
+          schema as typeof SchemaBase
+        );
   }
 }
-
-type SchemasOrNestedProcedure = ZProcedureDataParser | ApiProceduresDataParsers;
-
-export type ApiProceduresDataParsers = {
-  [procedureName: string]: SchemasOrNestedProcedure;
-};
 
 export function isProcedureSchema(
   target: ApiProceduresMap | ApiProceduresSchemas
@@ -197,7 +239,7 @@ export class ZProceduresDataParsers {
         procedurePathArr.pop();
 
         const procedurePath: string = [...procedurePathArr, procedureName].join(
-          '/'
+          '.'
         );
 
         this.map.set(

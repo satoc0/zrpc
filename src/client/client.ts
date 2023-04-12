@@ -24,6 +24,12 @@ export class ZClient<
   }
 
   get handle() {
+    if (!this.def.apiDefinition.bidirectional) {
+      throw new Error(
+        'Your API configuration does not have bidirectional communication enabled.'
+      );
+    }
+
     return this.handler.methods;
   }
 

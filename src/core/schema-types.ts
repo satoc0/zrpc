@@ -2,7 +2,7 @@ import { Long } from 'protobufjs/light';
 import { SchemaDef, SchemaTypes } from './api-definition';
 export type ValueOf<T> = T[keyof T];
 
-export type ProtobufFieldTypes =
+export type ProtobufDefaultFieldTypes =
   | 'double'
   | 'float'
   | 'int32'
@@ -17,8 +17,9 @@ export type ProtobufFieldTypes =
   | 'sfixed64'
   | 'string'
   | 'bool'
-  | 'bytes'
-  | object;
+  | 'bytes';
+
+export type ProtobufFieldTypes = ProtobufDefaultFieldTypes | object;
 
 export type ProtobufTypesWithOptional =
   | 'double'
