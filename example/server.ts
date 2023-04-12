@@ -8,14 +8,18 @@ import { api } from './index';
   server.handle.account.get.use((ctx) => {
     ctx.set('a', 'abc');
 
+    // cliente atual
     ctx.client.account.update();
+
+    // cliente que pode ta conectado a outra instância
+    ctx.client('myid').chat.addMessage({});
 
     console.log({ ctx: ctx.input.name });
   })((ctx) => {
     return { data: ctx.get('a') + ctx.input.name };
   });
 
-  const httpServer = new Server(server.entry);
+  const httpServer = new Server(server.http);
   const serverPort = 3000;
 
   httpServer.listen(serverPort, async () => {

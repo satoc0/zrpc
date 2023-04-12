@@ -5,7 +5,7 @@ import {
   HTTP_SUCCESS_STATUS_CODE,
   PROTOBUF_CONTENT_TYPE,
 } from '../core/constants';
-import { ZError } from '../core/core-errors';
+import { BiDirectionalNotEnabled, ZError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ServerApiHandlerConstructor } from './server-api-handler-constructor';
 import { BodyReadError } from './server-errors';
@@ -26,7 +26,13 @@ export class ZServer<
     return this.apiConstructor.methods;
   }
 
-  public async entry(
+  public ws() {
+    if (!this.def.apiDefinition.bidirectional) {
+      throw new BiDirectionalNotEnabled();
+    }
+  }
+
+  public async http(
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
   ) {

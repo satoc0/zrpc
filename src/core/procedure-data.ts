@@ -75,7 +75,7 @@ abstract class ZProcedureDataParserSchema {
 
   populateDefaultMeta(targetObject: any) {
     targetObject[PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE.fieldName] =
-      MessageType.Communication;
+      MessageType.Call;
     targetObject[PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME.fieldName] =
       this.procedureName;
   }

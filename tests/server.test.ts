@@ -69,7 +69,7 @@ it('should handle procedure', async () => {
     return { result: left + right };
   });
 
-  httpServer.on('request', (req, res) => server.entry(req, res));
+  httpServer.on('request', (req, res) => server.http(req, res));
 
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
@@ -87,7 +87,7 @@ it('should treat error in procedure handle', async () => {
     throw new Error(errorMessage);
   });
 
-  httpServer.on('request', (req, res) => server.entry(req, res));
+  httpServer.on('request', (req, res) => server.http(req, res));
 
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
@@ -116,7 +116,7 @@ it('should throw not found procedure handler', async () => {
 
   const procedureNotFoundError = new ProcedureNotFound('BasicAddJSON');
 
-  await localServer.entry(mockReq, serverResponse);
+  await localServer.http(mockReq, serverResponse);
 
   expect(resSetHeader.mock.calls).toHaveLength(1);
   expect(resSetHeader.mock.calls[0][0]).toBe('Content-Type');
@@ -157,7 +157,7 @@ it('should treat correctly body parser error', async () => {
     `${reqReadStreamError.name}: ${reqReadStreamError.message}`
   );
 
-  await localServer.entry(mockReq, serverResponse);
+  await localServer.http(mockReq, serverResponse);
 
   expect(resSetHeader.mock.calls).toHaveLength(1);
   expect(resSetHeader.mock.calls[0][0]).toBe('Content-Type');
@@ -181,7 +181,7 @@ it('should execute procedure middlewares', async () => {
     return { str: (req as any).reqMutationStr + input.str };
   });
 
-  httpServer.on('request', (req, res) => server.entry(req, res));
+  httpServer.on('request', (req, res) => server.http(req, res));
 
   const response = await client.call.stringOutput({ str: inputStr });
 

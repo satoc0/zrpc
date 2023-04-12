@@ -60,7 +60,8 @@ type MetadataField = {
 };
 
 export enum MessageType {
-  Communication,
+  Call,
+  CallResponse,
 }
 
 export const PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE: MetadataField = {

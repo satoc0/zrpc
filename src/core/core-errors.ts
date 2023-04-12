@@ -101,3 +101,11 @@ export class ProcedureNotFound extends ZError {
     });
   }
 }
+
+export class BiDirectionalNotEnabled extends Error {
+  constructor() {
+    super(
+      'Your API configuration does not have bidirectional communication enabled.'
+    );
+  }
+}
