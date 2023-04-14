@@ -8,10 +8,6 @@ export interface ApiDefinition<
    * Define your schemas
    */
   procedures: Procedures;
-  /**
-   * Enable bidirectional communication
-   */
-  bidirectional?: boolean;
 }
 
 export type SchemaDef = typeof SchemaBase | SchemaDefinition;

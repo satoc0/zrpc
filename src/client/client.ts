@@ -1,5 +1,4 @@
 import { ApiProceduresMap } from '../core';
-import { BiDirectionalNotEnabled } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ZClientApiCallerConstructor } from './client-api-caller-constructor';
 import { ZClientApiHandlerConstructor } from './client-api-handler-constructor';
@@ -25,10 +24,6 @@ export class ZClient<
   }
 
   get handle() {
-    if (!this.def.apiDefinition.bidirectional) {
-      throw new BiDirectionalNotEnabled();
-    }
-
     return this.handler.methods;
   }
 

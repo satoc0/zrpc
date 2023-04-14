@@ -1,6 +1,12 @@
-import { ProcedureMiddlewareHandler } from './server-api-handler-constructor';
+import { AcceptPromise } from '../core';
+import { Context } from './context-base';
 
-export type ServerConfig = {
-  middlewares?: ProcedureMiddlewareHandler<object, any>[];
-  adapter?: unknown;
+export type ServerConfig<MiddlewareHandler> = {
+  middlewares?: MiddlewareHandler[];
 };
+
+export type ProcedureHandlerFunction<
+  Input extends object,
+  Output extends object,
+  CTX extends Context = Context<Input>
+> = (ctx: CTX) => AcceptPromise<Output>;

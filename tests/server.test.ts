@@ -1,6 +1,6 @@
 import { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { AddressInfo, Socket } from 'node:net';
-import ZRPC, { ZClient, ZServer } from '../src';
+import ZRPC, { ZClient, ZHttpServer } from '../src';
 import { PROTOBUF_CONTENT_TYPE } from '../src/core/constants';
 import { ProcedureNotFound, ZError } from '../src/core/core-errors';
 import { BodyReadError } from '../src/server/server-errors';
@@ -32,11 +32,11 @@ export const api = new ZRPC({
 });
 
 let client: ZClient<typeof api>;
-let server: ZServer<typeof api>;
+let server: ZHttpServer<typeof api>;
 let httpServer: Server;
 
 beforeEach(async () => {
-  server = new ZServer(api);
+  server = new ZHttpServer(api);
   httpServer = new Server();
 
   await new Promise<void>((resolve) =>
@@ -69,7 +69,7 @@ it('should handle procedure', async () => {
     return { result: left + right };
   });
 
-  httpServer.on('request', (req, res) => server.http(req, res));
+  httpServer.on('request', (req, res) => server.entry(req, res));
 
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
@@ -87,7 +87,7 @@ it('should treat error in procedure handle', async () => {
     throw new Error(errorMessage);
   });
 
-  httpServer.on('request', (req, res) => server.http(req, res));
+  httpServer.on('request', (req, res) => server.entry(req, res));
 
   const left = randomIntFromInterval(0, 50);
   const right = randomIntFromInterval(0, 50);
@@ -101,7 +101,7 @@ it('should treat error in procedure handle', async () => {
 });
 
 it('should throw not found procedure handler', async () => {
-  const localServer = new ZServer(api);
+  const localServer = new ZHttpServer(api);
 
   const socket = new Socket();
   const mockReq = new IncomingMessage(socket);
@@ -116,7 +116,7 @@ it('should throw not found procedure handler', async () => {
 
   const procedureNotFoundError = new ProcedureNotFound('BasicAddJSON');
 
-  await localServer.http(mockReq, serverResponse);
+  await localServer.entry(mockReq, serverResponse);
 
   expect(resSetHeader.mock.calls).toHaveLength(1);
   expect(resSetHeader.mock.calls[0][0]).toBe('Content-Type');
@@ -129,7 +129,7 @@ it('should throw not found procedure handler', async () => {
 });
 
 it('should treat correctly body parser error', async () => {
-  const localServer = new ZServer(api);
+  const localServer = new ZHttpServer(api);
 
   localServer.handle.BasicAddJSON(async () => {
     return { result: 1 };
@@ -157,7 +157,7 @@ it('should treat correctly body parser error', async () => {
     `${reqReadStreamError.name}: ${reqReadStreamError.message}`
   );
 
-  await localServer.http(mockReq, serverResponse);
+  await localServer.entry(mockReq, serverResponse);
 
   expect(resSetHeader.mock.calls).toHaveLength(1);
   expect(resSetHeader.mock.calls[0][0]).toBe('Content-Type');
@@ -167,23 +167,4 @@ it('should treat correctly body parser error', async () => {
   expect(resEnd.mock.calls[0][0]).toEqual(
     bodyReadErrorError.getResponseBuffer()
   );
-});
-
-it('should execute procedure middlewares', async () => {
-  const inputStr = 'inputStr';
-  const reqMutationStr = 'yes_req_mutation';
-
-  const handler = server.handle.stringOutput.use(({ req }) => {
-    (req as any).reqMutationStr = reqMutationStr;
-  });
-
-  handler(({ req, input }) => {
-    return { str: (req as any).reqMutationStr + input.str };
-  });
-
-  httpServer.on('request', (req, res) => server.http(req, res));
-
-  const response = await client.call.stringOutput({ str: inputStr });
-
-  expect(response.str).toBe(reqMutationStr + inputStr);
 });

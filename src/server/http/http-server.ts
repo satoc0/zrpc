@@ -1,38 +1,41 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { ApiProceduresMap } from '../core/api-definition';
+import { AcceptPromise } from '../../core';
+import { ApiProceduresMap } from '../../core/api-definition';
 import {
   HTTP_ERROR_STATUS_CODE,
   HTTP_SUCCESS_STATUS_CODE,
   PROTOBUF_CONTENT_TYPE,
-} from '../core/constants';
-import { BiDirectionalNotEnabled, ZError } from '../core/core-errors';
-import { ZRPC } from '../zrpc';
-import { ServerApiHandlerConstructor } from './server-api-handler-constructor';
-import { BodyReadError } from './server-errors';
-import { ServerConfig } from './server.types';
-import { Context } from './request-context';
+} from '../../core/constants';
+import { ZError } from '../../core/core-errors';
+import { ZRPC } from '../../zrpc';
+import { BodyReadError } from '../server-errors';
+import { ServerConfig } from '../server.types';
+import { HttpServerApiConstructor } from './http-api-constructor';
+import { HttpContext } from './http-context';
 
-export class ZServer<
+export class ZHttpServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  private apiConstructor!: ServerApiHandlerConstructor<ZAPI, Procedures>;
+  private apiConstructor!: HttpServerApiConstructor<ZAPI, Procedures>;
 
-  constructor(private def: ZAPI, private config?: ServerConfig) {
-    this.apiConstructor = new ServerApiHandlerConstructor(def);
+  constructor(
+    private def: ZAPI,
+    private config?: ServerConfig<
+      (
+        req: IncomingMessage,
+        res: ServerResponse<IncomingMessage>
+      ) => AcceptPromise<void>
+    >
+  ) {
+    this.apiConstructor = new HttpServerApiConstructor(def);
   }
 
   get handle() {
     return this.apiConstructor.methods;
   }
 
-  public ws() {
-    if (!this.def.apiDefinition.bidirectional) {
-      throw new BiDirectionalNotEnabled();
-    }
-  }
-
-  public async http(
+  public async entry(
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
   ) {
@@ -45,16 +48,13 @@ export class ZServer<
 
       const handler = this.apiConstructor.getHandler(procedureName);
 
+      await this.runMiddlewares(req, res);
+
       const buffer = await this.readBuffer(req, procedureName);
 
       const procedureData = this.def.proceduresDataParsers.get(procedureName);
       const inputDecodedData = procedureData.input.decode(buffer);
-
-      const context = new Context(req, res, inputDecodedData);
-      res.writeProcessing();
-
-      await this.runMiddlewares(context);
-      await handler.runMiddlewares(context);
+      const context = new HttpContext(req, res, inputDecodedData);
 
       const handlerResult = await handler.run(context);
       const outputBuffer = procedureData.output.encode(handlerResult);
@@ -65,11 +65,14 @@ export class ZServer<
     }
   }
 
-  private async runMiddlewares(ctx: Context<any>) {
+  private async runMiddlewares(
+    req: IncomingMessage,
+    res: ServerResponse<IncomingMessage>
+  ) {
     if (!this.config || !Array.isArray(this.config.middlewares)) return;
 
     for (const midde of this.config.middlewares) {
-      await midde(ctx);
+      await (midde as any)(req, res);
     }
   }
 

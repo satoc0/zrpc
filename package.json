@@ -22,6 +22,7 @@
     "@types/benchmark": "^2.1.2",
     "@types/jest": "^29.4.0",
     "@types/node": "^18.14.4",
+    "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "@typescript-eslint/parser": "^5.54.0",
     "benchmark": "^2.1.4",
@@ -43,6 +44,7 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
-    "protobufjs": "^7.2.2"
+    "protobufjs": "^7.2.2",
+    "ws": "^8.13.0"
   }
 }

@@ -1,7 +1,6 @@
 import { ZRPC } from '../src/zrpc';
 
 export const api = new ZRPC({
-  bidirectional: true,
   procedures: {
     account: {
       get: {

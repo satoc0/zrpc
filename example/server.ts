@@ -1,25 +1,15 @@
 import { Server } from 'http';
-import { ZServer } from '../src';
+import { ZHttpServer } from '../src';
 import { api } from './index';
 
 (async () => {
-  const server = new ZServer(api);
+  const server = new ZHttpServer(api);
 
-  server.handle.account.get.use((ctx) => {
-    ctx.set('a', 'abc');
-
-    // cliente atual
-    ctx.client.account.update();
-
-    // cliente que pode ta conectado a outra instância
-    ctx.client('myid').chat.addMessage({});
-
-    console.log({ ctx: ctx.input.name });
-  })((ctx) => {
-    return { data: ctx.get('a') + ctx.input.name };
+  server.handle.account.get((ctx) => {
+    return { data: ctx.input.name };
   });
 
-  const httpServer = new Server(server.http);
+  const httpServer = new Server(server.entry);
   const serverPort = 3000;
 
   httpServer.listen(serverPort, async () => {
