@@ -1,5 +1,5 @@
 import { AcceptPromise } from '../core';
-import { Context } from './context-base';
+import { Context } from './protocols/context-base';
 
 export type ServerConfig<MiddlewareHandler> = {
   middlewares?: MiddlewareHandler[];

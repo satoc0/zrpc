@@ -1,18 +1,18 @@
 import type { IncomingMessage, Server } from 'node:http';
-import { ApiProceduresMap } from '../../core/api-definition';
-import { ZRPC } from '../../zrpc';
-import { ServerConfig } from '../server.types';
-import { WSServerApiConstructor } from './ws-api-constructor';
+import { ApiProceduresMap } from '../../../core/api-definition';
+import { ZRPC } from '../../../zrpc';
+import { ServerConfig } from '../../server.types';
+import { WSServerApiBuilder } from './ws-api-builder';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { WebSocketServer } from 'ws';
-import { AcceptPromise } from '../../core';
+import { AcceptPromise } from '../../../core';
 import { ZWSClient } from './ws-client';
 
 export class ZWSServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  private apiConstructor!: WSServerApiConstructor<ZAPI, Procedures>;
+  private apiConstructor!: WSServerApiBuilder<ZAPI, Procedures>;
 
   public readonly ws = new WebSocketServer({ noServer: true });
 
@@ -22,7 +22,7 @@ export class ZWSServer<
     private def: ZAPI,
     private config?: ServerConfig<(req: IncomingMessage) => AcceptPromise<void>>
   ) {
-    this.apiConstructor = new WSServerApiConstructor(def);
+    this.apiConstructor = new WSServerApiBuilder(def);
   }
 
   get handle() {

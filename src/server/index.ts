@@ -1,2 +1,2 @@
-export * from './http/http-server';
-export * from './ws/ws-server';
+export * from './protocols/http/http-server';
+export * from './protocols/ws/ws-server';

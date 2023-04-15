@@ -1,23 +1,23 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { AcceptPromise } from '../../core';
-import { ApiProceduresMap } from '../../core/api-definition';
-import {
-  HTTP_ERROR_STATUS_CODE,
-  HTTP_SUCCESS_STATUS_CODE,
-  PROTOBUF_CONTENT_TYPE,
-} from '../../core/constants';
-import { ZError } from '../../core/core-errors';
-import { ZRPC } from '../../zrpc';
-import { BodyReadError } from '../server-errors';
-import { ServerConfig } from '../server.types';
-import { HttpServerApiConstructor } from './http-api-constructor';
+
+import { HttpServerApiBuilder } from './http-api-builder';
 import { HttpContext } from './http-context';
+import { ApiProceduresMap, AcceptPromise } from '../../../core';
+import {
+  HTTP_SUCCESS_STATUS_CODE,
+  HTTP_ERROR_STATUS_CODE,
+  PROTOBUF_CONTENT_TYPE,
+} from '../../../core/constants';
+import { ZError } from '../../../core/core-errors';
+import { ZRPC } from '../../../zrpc';
+import { BodyReadError } from '../../server-errors';
+import { ServerConfig } from '../../server.types';
 
 export class ZHttpServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > {
-  private apiConstructor!: HttpServerApiConstructor<ZAPI, Procedures>;
+  private apiConstructor!: HttpServerApiBuilder<ZAPI, Procedures>;
 
   constructor(
     private def: ZAPI,
@@ -28,7 +28,7 @@ export class ZHttpServer<
       ) => AcceptPromise<void>
     >
   ) {
-    this.apiConstructor = new HttpServerApiConstructor(def);
+    this.apiConstructor = new HttpServerApiBuilder(def);
   }
 
   get handle() {

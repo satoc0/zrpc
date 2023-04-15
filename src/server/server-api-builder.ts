@@ -1,23 +1,23 @@
-import { ApiConstructor } from '../core/api-constructor';
+import { ApiBuilderBase } from '../core/api-builder-base';
 import { ProcedureNotFound } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import { ProcedureExecutor } from './procedure-executor';
 import { ProcedureHandlerFunction } from './server.types';
 
-export class ServerApiConstructor<
+export class ServerApiBuilder<
   ZAPI extends ZRPC,
   ConstructorMap extends Record<string, any>
-> extends ApiConstructor {
+> extends ApiBuilderBase {
   private handlers: Map<string, ProcedureExecutor<any, any>> = new Map();
 
   public readonly methods: ConstructorMap = {} as ConstructorMap;
 
   constructor(private def: ZAPI) {
     super();
-    this.buildStructor(this.methods, this.def.apiDefinition.procedures);
+    this.makeBuilder(this.methods, this.def.apiDefinition.procedures);
   }
 
-  protected methodStructor(procedurePath: string): (handler: any) => any {
+  protected methodBuilder(procedurePath: string): (handler: any) => any {
     return (handler: ProcedureHandlerFunction<any, any, any>) => {
       this.handlers.set(
         procedurePath,

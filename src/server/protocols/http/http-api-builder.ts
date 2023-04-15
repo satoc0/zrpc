@@ -3,9 +3,9 @@ import {
   ApiProceduresMap,
   ApiProceduresSchemas,
   SchemaDefToType,
-} from '../../core';
-import { ZRPC } from '../../zrpc';
-import { ServerApiConstructor } from '../server-api-constructor';
+} from '../../../core';
+import { ZRPC } from '../../../zrpc';
+import { ServerApiBuilder } from '../../server-api-builder';
 import { HttpContext } from './http-context';
 
 type HandlerSetter<
@@ -15,17 +15,15 @@ type HandlerSetter<
   handler: (ctx: CTX) => AcceptPromise<SchemaDefToType<Schema['output']>>
 ) => void;
 
-export type ApiConstructorMap<
-  Root extends ApiProceduresMap = ApiProceduresMap
-> = {
+export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
     ? HandlerSetter<Root[Key]>
     : Root[Key] extends ApiProceduresMap
-    ? ApiConstructorMap<Root[Key]>
+    ? ApiBuilderMap<Root[Key]>
     : never;
 };
 
-export class HttpServerApiConstructor<
+export class HttpServerApiBuilder<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> extends ServerApiConstructor<ZAPI, ApiConstructorMap<Procedures>> {}
+> extends ServerApiBuilder<ZAPI, ApiBuilderMap<Procedures>> {}

@@ -1,7 +1,7 @@
 import { ApiProceduresMap } from '../core';
 import { ZRPC } from '../zrpc';
-import { ZClientApiCallerConstructor } from './client-api-caller-constructor';
-import { ZClientApiHandlerConstructor } from './client-api-handler-constructor';
+import { ZClientApiCallerBuilder } from './client-api-caller-builder';
+import { ZClientApiHandlerBuilder } from './client-api-handler-builder';
 import { ClientConfig } from './client.types';
 
 export class ZClient<
@@ -10,13 +10,13 @@ export class ZClient<
 > {
   protected readonly clientId: string = 'randomGenerated';
 
-  private caller: ZClientApiCallerConstructor<ZAPI, Procedures>;
+  private caller: ZClientApiCallerBuilder<ZAPI, Procedures>;
 
-  private handler: ZClientApiHandlerConstructor<ZAPI, Procedures>;
+  private handler: ZClientApiHandlerBuilder<ZAPI, Procedures>;
 
   constructor(private def: ZAPI, private config?: ClientConfig) {
-    this.caller = new ZClientApiCallerConstructor(this.def, this.config);
-    this.handler = new ZClientApiHandlerConstructor(this.def, this.config);
+    this.caller = new ZClientApiCallerBuilder(this.def, this.config);
+    this.handler = new ZClientApiHandlerBuilder(this.def, this.config);
   }
 
   get call() {

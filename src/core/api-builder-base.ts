@@ -1,21 +1,21 @@
 import { ApiProceduresMap, ApiProceduresSchemas } from './api-definition';
 import { isProcedureSchema } from './procedure-data';
 
-export type ApiConstructorMapAbstraction<
+export type ApiBuilderMapAbstraction<
   Root extends ApiProceduresMap = ApiProceduresMap
 > = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
     ? unknown
     : Root[Key] extends ApiProceduresMap
-    ? ApiConstructorMapAbstraction<Root[Key]>
+    ? ApiBuilderMapAbstraction<Root[Key]>
     : object;
 };
 
-export abstract class ApiConstructor {
-  protected abstract readonly methods: ApiConstructorMapAbstraction;
+export abstract class ApiBuilderBase {
+  protected abstract readonly methods: ApiBuilderMapAbstraction;
 
-  protected buildStructor(
-    structor: ApiConstructorMapAbstraction,
+  protected makeBuilder(
+    builderMapTarget: ApiBuilderMapAbstraction,
     map: ApiProceduresMap,
     procedurePathArr: string[] = []
   ) {
@@ -31,12 +31,12 @@ export abstract class ApiConstructor {
           '/'
         );
 
-        structor[procedureName] = this.methodStructor(procedurePath);
+        builderMapTarget[procedureName] = this.methodBuilder(procedurePath);
       } else {
-        structor[procedureName] = {};
+        builderMapTarget[procedureName] = {};
 
-        this.buildStructor(
-          structor[procedureName] as any,
+        this.makeBuilder(
+          builderMapTarget[procedureName] as any,
           procedure,
           procedurePathArr
         );
@@ -46,7 +46,7 @@ export abstract class ApiConstructor {
     }
   }
 
-  protected abstract methodStructor(
+  protected abstract methodBuilder(
     methodPathName: string
   ): (input: unknown) => unknown;
 }

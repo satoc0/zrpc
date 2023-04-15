@@ -1,12 +1,10 @@
-import { ApiConstructor } from '../core/api-constructor';
+import { ApiBuilderBase } from '../core/api-builder-base';
 import { ApiProceduresMap, ApiProceduresSchemas } from '../core/api-definition';
 import { SchemaDefToType } from '../core/schema-types';
 import { ZRPC } from '../zrpc';
 import { ClientConfig } from './client.types';
 
-export type ApiConstructorMap<
-  Root extends ApiProceduresMap = ApiProceduresMap
-> = {
+export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
     ? (
         handler: (
@@ -14,25 +12,25 @@ export type ApiConstructorMap<
         ) => Promise<SchemaDefToType<Root[Key]['output']>>
       ) => void
     : Root[Key] extends ApiProceduresMap
-    ? ApiConstructorMap<Root[Key]>
+    ? ApiBuilderMap<Root[Key]>
     : never;
 };
 
-export class ZClientApiHandlerConstructor<
+export class ZClientApiHandlerBuilder<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> extends ApiConstructor {
-  public readonly methods: ApiConstructorMap<Procedures> =
-    {} as ApiConstructorMap<Procedures>;
+> extends ApiBuilderBase {
+  public readonly methods: ApiBuilderMap<Procedures> =
+    {} as ApiBuilderMap<Procedures>;
 
   private handlers: Map<string, any> = new Map();
 
   constructor(protected def: ZAPI, private config?: ClientConfig) {
     super();
-    this.buildStructor(this.methods, this.def.apiDefinition.procedures);
+    this.makeBuilder(this.methods, this.def.apiDefinition.procedures);
   }
 
-  protected methodStructor(
+  protected methodBuilder(
     procedurePath: string
   ): (handler: any) => Promise<any> {
     return async (handler) => {
