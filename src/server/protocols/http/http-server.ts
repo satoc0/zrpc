@@ -1,71 +1,72 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 
-import { HttpServerApiBuilder } from './http-api-builder';
-import { HttpContext } from './http-context';
-import { ApiProceduresMap, AcceptPromise } from '../../../core';
+import { AcceptPromise, ApiProceduresMap } from '../../../core';
 import {
-  HTTP_SUCCESS_STATUS_CODE,
   HTTP_ERROR_STATUS_CODE,
+  HTTP_SUCCESS_STATUS_CODE,
   PROTOBUF_CONTENT_TYPE,
 } from '../../../core/constants';
 import { ZError } from '../../../core/core-errors';
+import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-base';
 import { ZRPC } from '../../../zrpc';
 import { BodyReadError } from '../../server-errors';
 import { ServerConfig } from '../../server.types';
+import { HttpServerApiBuilder } from './http-api-builder';
+import { HttpContext } from './http-context';
 
 export class ZHttpServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> {
-  private apiConstructor!: HttpServerApiBuilder<ZAPI, Procedures>;
+> extends ZServerProtocolBase {
+  protected builder!: HttpServerApiBuilder<ZAPI, Procedures>;
 
   constructor(
-    private def: ZAPI,
-    private config?: ServerConfig<
+    protected def: ZAPI,
+    protected config?: ServerConfig<
       (
         req: IncomingMessage,
         res: ServerResponse<IncomingMessage>
       ) => AcceptPromise<void>
     >
   ) {
-    this.apiConstructor = new HttpServerApiBuilder(def);
+    super();
+    this.builder = new HttpServerApiBuilder(def);
   }
 
   get handle() {
-    return this.apiConstructor.methods;
+    return this.builder.methods;
   }
 
-  public async entry(
-    req: IncomingMessage,
-    res: ServerResponse<IncomingMessage>
-  ) {
-    try {
-      const procedurePathArr = (req.url as string).split('/');
+  public async attach(httpServer: Server) {
+    httpServer.addListener('request', async (req, res) => {
+      try {
+        const procedurePathArr = (req.url as string).split('/');
 
-      procedurePathArr.shift();
+        procedurePathArr.shift();
 
-      const procedureName: string = procedurePathArr.join('/');
+        const procedureName: string = procedurePathArr.join('/');
 
-      const handler = this.apiConstructor.getHandler(procedureName);
+        const handler = this.builder.getHandler(procedureName);
 
-      await this.runMiddlewares(req, res);
+        await this.runMiddlewares(req, res);
 
-      const buffer = await this.readBuffer(req, procedureName);
+        const buffer = await this.readBuffer(req, procedureName);
 
-      const procedureData = this.def.proceduresDataParsers.get(procedureName);
-      const inputDecodedData = procedureData.input.decode(buffer);
-      const context = new HttpContext(req, res, inputDecodedData);
+        const procedureData = this.def.proceduresDataParsers.get(procedureName);
+        const inputDecodedData = procedureData.input.decode(buffer);
+        const context = new HttpContext(req, res, inputDecodedData);
 
-      const handlerResult = await handler.run(context);
-      const outputBuffer = procedureData.output.encode(handlerResult);
+        const handlerResult = await handler.run(context);
+        const outputBuffer = procedureData.output.encode(handlerResult);
 
-      this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
-    } catch (e) {
-      this.dispatchError(res, e as Error);
-    }
+        this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
+      } catch (e) {
+        this.dispatchError(res, e as Error);
+      }
+    });
   }
 
-  private async runMiddlewares(
+  protected async runMiddlewares(
     req: IncomingMessage,
     res: ServerResponse<IncomingMessage>
   ) {

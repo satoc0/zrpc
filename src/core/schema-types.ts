@@ -101,10 +101,9 @@ export type ProtobufToPrimivite<T extends SchemaTypes> =
     ? { [K in keyof T]: ProtobufToPrimivite<T[K]> }
     : unknown;
 
-export type SchemaDefToType<Schema extends SchemaDef> =
-  Schema extends SchemaTypes
-    ? ProtobufToPrimivite<Schema>
-    : Properties<Schema['prototype']>;
+export type SchemaToType<Schema extends SchemaDef> = Schema extends SchemaTypes
+  ? ProtobufToPrimivite<Schema>
+  : Properties<Schema['prototype']>;
 
 export type Types =
   | number

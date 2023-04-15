@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { Context } from '../context-base';
+import { Context } from '../../../core/procedures/procedure-executor';
 
 export class HttpContext<Input extends object> extends Context<Input> {
   constructor(

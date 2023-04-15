@@ -1,29 +1,32 @@
-import { ApiBuilderBase } from '../core/api-builder-base';
-import { ApiProceduresMap, ApiProceduresSchemas } from '../core/api-definition';
-import { ZError } from '../core/core-errors';
-import { SchemaDefToType } from '../core/schema-types';
-import { ZRPC } from '../zrpc';
-import { ZClientRequest } from './client-request';
-import { ClientConfig } from './client.types';
+import {
+  ApiProceduresMap,
+  ApiProceduresSchemas,
+} from '../../../core/api-definition';
+import { ApiBuilderBase } from '../../../core/builder/api-builder-base';
+import { ZError } from '../../../core/core-errors';
+import { SchemaToType } from '../../../core/schema-types';
+import { ZRPC } from '../../../zrpc';
+import { ZHttpClientRequest } from './http-client-request';
+import { ZClientHttpConfig } from './http-client-types';
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
     ? (
-        input: SchemaDefToType<Root[Key]['input']>
-      ) => Promise<SchemaDefToType<Root[Key]['output']>>
+        input: SchemaToType<Root[Key]['input']>
+      ) => Promise<SchemaToType<Root[Key]['output']>>
     : Root[Key] extends ApiProceduresMap
     ? ApiBuilderMap<Root[Key]>
     : never;
 };
 
-export class ZClientApiCallerBuilder<
+export class ZHttpClientCallerBuilder<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > extends ApiBuilderBase {
   public readonly methods: ApiBuilderMap<Procedures> =
     {} as ApiBuilderMap<Procedures>;
 
-  constructor(protected def: ZAPI, private config?: ClientConfig) {
+  constructor(protected def: ZAPI, private config?: ZClientHttpConfig) {
     super();
     this.makeBuilder(this.methods, this.def.apiDefinition.procedures);
   }
@@ -32,7 +35,7 @@ export class ZClientApiCallerBuilder<
     return async (input) => {
       const procedureData = this.def.proceduresDataParsers.get(procedurePath);
 
-      const clientRequest = new ZClientRequest(procedureData, input);
+      const clientRequest = new ZHttpClientRequest(procedureData, input);
 
       const requestBase: RequestInit = this.config?.requestBuilder
         ? await this.config.requestBuilder()

@@ -1,8 +1,10 @@
-import { ApiBuilderBase } from '../core/api-builder-base';
+import { ApiBuilderBase } from '../core/builder/api-builder-base';
 import { ProcedureNotFound } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
-import { ProcedureExecutor } from './procedure-executor';
-import { ProcedureHandlerFunction } from './server.types';
+import {
+  ProcedureExecutor,
+  ProcedureHandlerFunction,
+} from '../core/procedures/procedure-executor';
 
 export class ServerApiBuilder<
   ZAPI extends ZRPC,
@@ -18,7 +20,7 @@ export class ServerApiBuilder<
   }
 
   protected methodBuilder(procedurePath: string): (handler: any) => any {
-    return (handler: ProcedureHandlerFunction<any, any, any>) => {
+    return (handler: ProcedureHandlerFunction<any, any>) => {
       this.handlers.set(
         procedurePath,
         new ProcedureExecutor<any, any>(procedurePath as string, handler)

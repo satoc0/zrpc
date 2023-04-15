@@ -1,4 +1,4 @@
-import { Server } from 'http';
+import { createServer } from 'http';
 import { ZHttpServer } from '../src';
 import { api } from './index';
 
@@ -9,8 +9,10 @@ import { api } from './index';
     return { data: ctx.input.name };
   });
 
-  const httpServer = new Server(server.entry);
+  const httpServer = createServer();
   const serverPort = 3000;
+
+  server.attach(httpServer);
 
   httpServer.listen(serverPort, async () => {
     console.log('@@@@@@@@@@@@@ listening on ' + serverPort);

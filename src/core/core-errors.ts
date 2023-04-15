@@ -1,5 +1,5 @@
 import { SchemaDefinition } from './api-definition';
-import { protobufTypeConstructor } from './message-type-constructors';
+import { protobufTypeBuilder } from './message-type-builder';
 import { ProcedureDataOperation, ProcedureDataSide } from './schema-types';
 
 export interface ZErrorData {
@@ -19,7 +19,7 @@ export class ZError extends Error {
     auxData: 'string',
   };
 
-  static schema = protobufTypeConstructor('ZError', ZError.schemaDef);
+  static schema = protobufTypeBuilder('ZError', ZError.schemaDef);
 
   static is(obj: any): obj is ZErrorData {
     return !!obj.isZError;

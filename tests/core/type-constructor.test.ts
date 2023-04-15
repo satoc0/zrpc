@@ -1,6 +1,6 @@
 import { Field, Type } from 'protobufjs';
 import { SchemaDefinition } from '../../src/core';
-import { protobufTypeConstructor } from '../../src/core/message-type-constructors';
+import { protobufTypeBuilder } from '../../src/core/message-type-builder';
 
 it('should create type by json definition', () => {
   const jsonDef: SchemaDefinition = {
@@ -12,7 +12,7 @@ it('should create type by json definition', () => {
   };
 
   const typeName = 'type';
-  const typeCreated = protobufTypeConstructor(typeName, jsonDef);
+  const typeCreated = protobufTypeBuilder(typeName, jsonDef);
 
   expect(typeCreated).toBeInstanceOf(Type);
 

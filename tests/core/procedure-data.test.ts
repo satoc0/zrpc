@@ -1,6 +1,6 @@
 import { Field, ProcedureDataSide, Schema, SchemaBase } from '../../src/core';
 import { ParserDataError } from '../../src/core/core-errors';
-import { ZProceduresDataParsers } from '../../src/core/procedure-data';
+import { ZProceduresDataParsers } from '../../src/core/procedures/procedure-data';
 
 const inputString = 'teste';
 const outputString = inputString + '_res';

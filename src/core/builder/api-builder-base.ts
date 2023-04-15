@@ -1,5 +1,5 @@
-import { ApiProceduresMap, ApiProceduresSchemas } from './api-definition';
-import { isProcedureSchema } from './procedure-data';
+import { ApiProceduresMap, ApiProceduresSchemas } from '../api-definition';
+import { isProcedureSchema } from '../procedures/procedure-data';
 
 export type ApiBuilderMapAbstraction<
   Root extends ApiProceduresMap = ApiProceduresMap

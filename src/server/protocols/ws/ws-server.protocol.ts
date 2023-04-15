@@ -3,33 +3,36 @@ import { ApiProceduresMap } from '../../../core/api-definition';
 import { ZRPC } from '../../../zrpc';
 import { ServerConfig } from '../../server.types';
 import { WSServerApiBuilder } from './ws-api-builder';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { WebSocketServer } from 'ws';
 import { AcceptPromise } from '../../../core';
 import { ZWSClient } from './ws-client';
+import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-base';
 
 export class ZWSServer<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> {
-  private apiConstructor!: WSServerApiBuilder<ZAPI, Procedures>;
+> extends ZServerProtocolBase {
+  protected builder!: WSServerApiBuilder<ZAPI, Procedures>;
 
   public readonly ws = new WebSocketServer({ noServer: true });
 
   public clients: Set<ZWSClient> = new Set();
 
   constructor(
-    private def: ZAPI,
-    private config?: ServerConfig<(req: IncomingMessage) => AcceptPromise<void>>
+    protected def: ZAPI,
+    protected config?: ServerConfig<
+      (req: IncomingMessage) => AcceptPromise<void>
+    >
   ) {
-    this.apiConstructor = new WSServerApiBuilder(def);
+    super();
+    this.builder = new WSServerApiBuilder(def);
   }
 
   get handle() {
-    return this.apiConstructor.methods;
+    return this.builder.methods;
   }
 
-  public async entry(httpServer: Server) {
+  public async attach(httpServer: Server) {
     httpServer.on('upgrade', async (req, socket, head) => {
       await this.runMiddlewares(req);
 
@@ -45,7 +48,7 @@ export class ZWSServer<
 
   private initClientsHeartbeat() {}
 
-  private async runMiddlewares(req: IncomingMessage) {
+  protected async runMiddlewares(req: IncomingMessage) {
     if (!this.config || !Array.isArray(this.config.middlewares)) return;
 
     for (const midde of this.config.middlewares) {

@@ -14,16 +14,18 @@ async function runTest(name: string, iterations: number, fn: any) {
 }
 
 (async () => {
-  console.log('Simple schema');
-  await runTest('trpc', 100, async () => {
+  const times = 100;
+  console.log('Simple schema ' + times + 'x ');
+  await runTest('trpc', times, async () => {
     await trpcClient.simple.query({ left: 5, right: 5 });
   });
 
-  await runTest('zrpc', 100, async () => {
+  await runTest('zrpc', times, async () => {
     await zrpcClient.call.simple({ left: 5, right: 5 });
   });
 
-  console.log('Complex schema');
+  console.log('');
+  console.log('Complex schema ' + times + 'x ');
   const input = {
     str: 'string',
     num: 123,

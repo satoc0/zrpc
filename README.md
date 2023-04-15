@@ -1,6 +1,6 @@
 <center>
 <h1>ZRPC</h1>
-Fast, easy and type safety client-server-client communication.
+Fast, easy and type safety client-server communication.
 
 <a href="#install">Install</a> - <a href="#usage">Usage</a> - <a href="#benchmark">Benchmarks</a>
 
@@ -95,10 +95,15 @@ Because of protobuf serialization and a simplest implementation, ZRPC can be 2 t
 
 ```
 > zrpc@0.0.0 benchmark
-> NODE_OPTIONS=--max-old-space-size=8192 ts-node --project tsconfig.ts-node.json benchmarks/index.ts
-trpc x 120,567 ops/sec ±9.25% (50 runs sampled)
-zrpc x 349,709 ops/sec ±27.45% (23 runs sampled)
-Fastest is zrpc
+> NODE_OPTIONS=--max-old-space-size=8192 tsx benchmarks/index.ts
+
+Simple schema 100x
+trpc: 351.176ms
+zrpc: 191.616ms
+
+Complex schema 100x
+trpc: 295.633ms
+zrpc: 201.346ms
 ```
 
 <br>

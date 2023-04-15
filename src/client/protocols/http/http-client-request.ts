@@ -1,12 +1,12 @@
 import {
   HTTP_ERROR_STATUS_CODE,
   PROTOBUF_CONTENT_TYPE,
-} from '../core/constants';
-import { ZError } from '../core/core-errors';
-import { ZProcedureDataParser } from '../core/procedure-data';
+} from '../../../core/constants';
+import { ZError } from '../../../core/core-errors';
+import { ZProcedureDataParser } from '../../../core/procedures/procedure-data';
 import { Buffer } from 'buffer';
 
-export class ZClientRequest {
+export class ZHttpClientRequest {
   private static requiredHeaders: HeadersInit = {
     'content-type': PROTOBUF_CONTENT_TYPE,
     accept: `${PROTOBUF_CONTENT_TYPE}, application/json`,
@@ -48,7 +48,7 @@ export class ZClientRequest {
 
     return {
       ...additionalHeaders,
-      ...ZClientRequest.requiredHeaders,
+      ...ZHttpClientRequest.requiredHeaders,
     };
   }
 

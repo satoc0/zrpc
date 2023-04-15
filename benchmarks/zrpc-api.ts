@@ -1,5 +1,5 @@
 import { createServer as createHttpServer } from 'node:http';
-import ZRPC, { SchemaDef, ZClient, ZServer } from '../src';
+import ZRPC, { SchemaDef, ZHttpClient, ZHttpServer } from '../src';
 import { AddressInfo } from 'node:net';
 
 export function createServer() {
@@ -39,7 +39,7 @@ export function createServer() {
     },
   });
 
-  const server = new ZServer(api);
+  const server = new ZHttpServer(api);
 
   server.handle.simple(({ input: { left, right } }) => {
     return { result: left + right };
@@ -49,7 +49,10 @@ export function createServer() {
     return input;
   });
 
-  const httpServer = createHttpServer((req, res) => server.entry(req, res));
+  const httpServer = createHttpServer();
+
+  server.attach(httpServer);
+
   httpServer.listen();
 
   return { api, httpServer };
@@ -58,7 +61,7 @@ export function createServer() {
 export const { api, httpServer } = createServer();
 export const port = (httpServer.address() as AddressInfo).port;
 
-export const zrpcClient = new ZClient(api, {
+export const zrpcClient = new ZHttpClient(api, {
   url: `http://localhost:${port}`,
   requestBuilder: () => {
     return {

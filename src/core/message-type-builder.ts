@@ -7,7 +7,7 @@ import {
   ProtobufTypesWithOptional,
 } from './schema-types';
 
-function typeOrFieldConstructor(
+function typeOrFieldBuilder(
   name: string,
   schema: SchemaTypes,
   fieldId: number,
@@ -35,12 +35,7 @@ function typeOrFieldConstructor(
 
   for (const fieldName in schema) {
     const fSchema = schema[fieldName];
-    const field = typeOrFieldConstructor(
-      fieldName,
-      fSchema,
-      fFieldId,
-      typeRoot
-    );
+    const field = typeOrFieldBuilder(fieldName, fSchema, fFieldId, typeRoot);
 
     typeRoot.add(field);
 
@@ -95,15 +90,12 @@ function addProcedureMetadataFields(rootType: Type) {
   }
 }
 
-export function protobufTypeConstructor(
-  name: string,
-  schema: SchemaDefinition
-) {
+export function protobufTypeBuilder(name: string, schema: SchemaDefinition) {
   const rootType = new Type(name);
 
   let id = MESSAGE_START_FIELD_OFFSET;
   for (const v in schema) {
-    rootType.add(typeOrFieldConstructor(v, schema[v], id, rootType));
+    rootType.add(typeOrFieldBuilder(v, schema[v], id, rootType));
     ++id;
   }
 
@@ -112,13 +104,13 @@ export function protobufTypeConstructor(
 
 const nameReplaceRegExp = /[^\w]/g;
 
-export function protobufProcedureTypeConstructor(
+export function protobufProcedureTypeBuilder(
   side: ProcedureDataSide,
   schemaName: string,
   schema: SchemaDefinition
 ) {
   const typeName = `${side}__${schemaName}`.replace(nameReplaceRegExp, '');
-  const type = protobufTypeConstructor(typeName, schema);
+  const type = protobufTypeBuilder(typeName, schema);
 
   addProcedureMetadataFields(type);
 

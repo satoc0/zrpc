@@ -5,24 +5,24 @@ import {
   ApiProceduresSchemas,
   SchemaDef,
   SchemaDefinition,
-} from './api-definition';
+} from '../api-definition';
 import {
   InvalidSchemaData,
   ParserDataError,
   ProcedureParserNotFound,
-} from './core-errors';
+} from '../core-errors';
 import {
   ProcedureDataOperation,
   ProcedureDataSide,
   Properties,
-} from './schema-types';
-import { SchemaBase } from './schemas';
+} from '../schema-types';
+import { SchemaBase } from '../schemas';
 import {
   MessageType,
   PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE,
   PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME,
-  protobufProcedureTypeConstructor,
-} from './message-type-constructors';
+  protobufProcedureTypeBuilder,
+} from '../message-type-builder';
 
 export function encodeByClassSchema<
   Schema extends typeof SchemaBase,
@@ -97,7 +97,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
   ) {
     super();
 
-    this.schema = protobufProcedureTypeConstructor(
+    this.schema = protobufProcedureTypeBuilder(
       side,
       schemaName,
       schemaDefinition
@@ -225,7 +225,7 @@ export function isProcedureSchema(
 export class ZProceduresDataParsers {
   private map: Map<string, ZProcedureDataParser> = new Map();
 
-  constructor(private proceduresMap: ApiProceduresMap) {
+  constructor(proceduresMap: ApiProceduresMap) {
     this.buildMap(proceduresMap);
   }
 

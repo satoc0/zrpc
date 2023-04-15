@@ -2,7 +2,7 @@ import {
   AcceptPromise,
   ApiProceduresMap,
   ApiProceduresSchemas,
-  SchemaDefToType,
+  SchemaToType,
 } from '../../../core';
 import { ZRPC } from '../../../zrpc';
 import { ServerApiBuilder } from '../../server-api-builder';
@@ -10,9 +10,9 @@ import { WSContext } from './ws-context';
 
 type HandlerSet<
   Schema extends ApiProceduresSchemas,
-  CTX = WSContext<SchemaDefToType<Schema['input']>>
+  CTX = WSContext<SchemaToType<Schema['input']>>
 > = (
-  handler: (ctx: CTX) => AcceptPromise<SchemaDefToType<Schema['output']>>
+  handler: (ctx: CTX) => AcceptPromise<SchemaToType<Schema['output']>>
 ) => void;
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
