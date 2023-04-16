@@ -5,8 +5,8 @@ import {
 import { ApiBuilderBase } from '../../../core/builder/api-builder-base';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
+import { ZSocket } from './socket/socket';
 import { ZClientWSConfig } from './ws-client-types';
-import { ZSocket } from './ws-socket';
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
@@ -34,7 +34,7 @@ export class WsClientHandlerBuilder<
 
   protected methodFactory(procedurePath: string): (input: any) => Promise<any> {
     return async (handler) => {
-      this.socket.listen(procedurePath, handler);
+      this.socket.messages.listen(procedurePath, handler);
     };
   }
 }

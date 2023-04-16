@@ -1,53 +1,56 @@
-import { AcceptPromise } from '../../../core';
+import { AcceptPromise } from '../../../../core';
 import {
-  BinaryPacketParser,
-  Packet,
-  PacketType,
-} from '../../../core/protocols/binary-comunication';
-import { ZRPC } from '../../../zrpc';
-import { ZClientHttpConfig } from '../http';
-import { Buffer } from 'buffer';
+  SocketMessage,
+  SocketMessageParser,
+  SocketMessageType,
+  isPingOrPongBufferMessage,
+} from '../../../../core/protocols/ws/socket-message';
+import { ZRPC } from '../../../../zrpc';
+import { ZClientWSConfig } from '../ws-client-types';
+import { SocketConnection, SocketEventMessage } from './socket-connection';
 
 export type SubscriptionHandler = (input: object) => AcceptPromise<object>;
 export type ResponseCallback = (err: Error | null, data: object | null) => void;
 
 const MAX_CALL_ID = 255;
 
-export class ZSocket {
+export class SocketMessages {
   private callId = 0;
-
-  public readonly ws!: WebSocket;
 
   private proceduresHandlers: Map<string, SubscriptionHandler> = new Map();
 
   private responseWaiters: Map<number, ResponseCallback> = new Map();
 
-  constructor(protected api: ZRPC, protected config: ZClientHttpConfig) {
-    this.ws = new WebSocket(this.config.url as string);
+  constructor(
+    protected api: ZRPC,
+    protected config: ZClientWSConfig,
+    public connection: SocketConnection
+  ) {
     this.init();
   }
 
   private init() {
-    this.ws.binaryType = 'arraybuffer';
+    this.connection
+      .getWS()
+      .addEventListener('message', (message: SocketEventMessage) => {
+        if (isPingOrPongBufferMessage(message.data)) return;
 
-    this.ws.addEventListener('message', (message) => {
-      const arrayBuffer = message.data as ArrayBuffer;
-      const buffer = Buffer.from(arrayBuffer);
-      this.handleMessage(buffer);
-    });
+        this.handleMessage(message);
+      });
   }
 
-  private handleMessage(packetBuffer: Buffer) {
-    const packet = BinaryPacketParser.decode(packetBuffer);
+  private handleMessage(message: SocketEventMessage) {
+    const buffer = Buffer.from(message.data);
+    const packet = SocketMessageParser.decode(buffer);
 
-    if (packet.packetType === PacketType.Call) {
+    if (packet.messageType === SocketMessageType.Call) {
       this.callHandler(packet);
     } else {
       this.callResponseWaiter(packet);
     }
   }
 
-  private async callHandler(packet: Packet) {
+  private async callHandler(packet: SocketMessage) {
     const handler = this.proceduresHandlers.get(packet.procedureName);
 
     if (!handler) {
@@ -64,14 +67,14 @@ export class ZSocket {
 
     const responseBuffer = dataParsers.output.encode(callResponse);
 
-    this.sendPacket({
+    this.connection.sendPacket({
       ...packet,
-      packetType: PacketType.CallReponse,
+      messageType: SocketMessageType.CallReponse,
       dataBuffer: responseBuffer,
     });
   }
 
-  private callResponseWaiter(packet: Packet) {
+  private callResponseWaiter(packet: SocketMessage) {
     const callback = this.responseWaiters.get(packet.callId);
 
     if (!callback) {
@@ -115,19 +118,14 @@ export class ZSocket {
 
     const callId = this.getCallId();
 
-    this.sendPacket({
-      packetType: PacketType.Call,
+    this.connection.sendPacket({
+      messageType: SocketMessageType.Call,
       callId,
       procedureName,
       dataBuffer,
     });
 
     return callId;
-  }
-
-  private sendPacket(packet: Packet) {
-    const packetBuffer = BinaryPacketParser.encode(packet);
-    this.ws.send(packetBuffer);
   }
 
   private getCallId(): number {

@@ -1,10 +1,10 @@
+import { Buffer } from 'buffer';
 import {
   HTTP_ERROR_STATUS_CODE,
   PROTOBUF_CONTENT_TYPE,
 } from '../../../core/constants';
 import { ZError } from '../../../core/core-errors';
 import { ZProcedureDataParser } from '../../../core/procedures/procedure-data';
-import { Buffer } from 'buffer';
 
 export class ZHttpClientRequest {
   private static requiredHeaders: HeadersInit = {

@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { httpServer as tHttpServer, trpcClient } from './trpc-api';
-import { httpServer as zHttpServer, zrpcClient } from './zrpc-api';
+import { zHttpServer, zrpcHttpClient } from './zrpc-api';
 
 async function runTest(name: string, iterations: number, fn: any) {
   let i = 0;
@@ -21,7 +21,7 @@ async function runTest(name: string, iterations: number, fn: any) {
   });
 
   await runTest('zrpc', times, async () => {
-    await zrpcClient.call.simple({ left: 5, right: 5 });
+    await zrpcHttpClient.call.simple({ left: 5, right: 5 });
   });
 
   console.log('');
@@ -47,7 +47,7 @@ async function runTest(name: string, iterations: number, fn: any) {
   });
 
   await runTest('zrpc', 100, async () => {
-    await zrpcClient.call.complex(input);
+    await zrpcHttpClient.call.complex(input);
   });
 
   zHttpServer.close();

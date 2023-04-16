@@ -8,8 +8,8 @@ import {
 } from '../../../core/builder/api-builder-base';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
+import { ZSocket } from './socket/socket';
 import { ZClientWSConfig } from './ws-client-types';
-import { ZSocket } from './ws-socket';
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
@@ -38,17 +38,25 @@ export class WsClientCallerBuilder<
   ): MethodBuilderReturn<any, Promise<any>> {
     return async (input) => {
       return new Promise((resolve, reject) => {
-        const callId = this.socket.callRemoteProcedure(procedurePath, input);
-        const tm = setTimeout(() => {
-          reject(
-            new Error(
-              `Call timeout, procedure: ${procedurePath}, call id: ${callId}`
-            )
-          );
-        }, this.config.responseTimeout);
+        const callId = this.socket.messages.callRemoteProcedure(
+          procedurePath,
+          input
+        );
+        const timeoutId = setTimeout(
+          (procedure: string, cid: number) => {
+            reject(
+              new Error(
+                `Call timeout, procedure: ${procedure}, call id: ${cid}`
+              )
+            );
+          },
+          this.config.responseTimeout,
+          procedurePath,
+          callId
+        );
 
-        this.socket.waitCallResponse(callId, (err, output) => {
-          clearTimeout(tm);
+        this.socket.messages.waitCallResponse(callId, (err, output) => {
+          clearTimeout(timeoutId);
 
           if (err) {
             reject(err);

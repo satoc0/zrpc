@@ -1,10 +1,10 @@
 import { ApiProceduresMap } from '../../../core';
 import { ZClientBidirectionalProtocolBase } from '../../../core/protocols/client-protocol-base';
 import { ZRPC } from '../../../zrpc';
+import { ZSocket } from './socket/socket';
 import { WsClientCallerBuilder } from './ws-client-caller-builder';
 import { WsClientHandlerBuilder } from './ws-client-handler-builder';
 import { ZClientWSConfig } from './ws-client-types';
-import { ZSocket } from './ws-socket';
 
 export class ZWSClient<
   ZAPI extends ZRPC,

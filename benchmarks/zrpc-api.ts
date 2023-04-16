@@ -39,29 +39,29 @@ export function createServer() {
     },
   });
 
-  const server = new ZHttpServer(api);
+  const httpServer = new ZHttpServer(api);
 
-  server.handle.simple(({ input: { left, right } }) => {
+  httpServer.handle.simple(({ input: { left, right } }) => {
     return { result: left + right };
   });
 
-  server.handle.complex(({ input }) => {
+  httpServer.handle.complex(({ input }) => {
     return input;
   });
 
-  const httpServer = createHttpServer();
+  const zHttpServer = createHttpServer();
 
-  server.attach(httpServer);
+  httpServer.attach(zHttpServer);
 
-  httpServer.listen();
+  zHttpServer.listen();
 
-  return { api, httpServer };
+  return { api, zHttpServer };
 }
 
-export const { api, httpServer } = createServer();
-export const port = (httpServer.address() as AddressInfo).port;
+export const { api, zHttpServer } = createServer();
+export const port = (zHttpServer.address() as AddressInfo).port;
 
-export const zrpcClient = new ZHttpClient(api, {
+export const zrpcHttpClient = new ZHttpClient(api, {
   url: `http://localhost:${port}`,
   requestBuilder: () => {
     return {
