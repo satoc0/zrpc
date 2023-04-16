@@ -6,11 +6,10 @@ import {
   ApiBuilderBase,
   MethodBuilderReturn,
 } from '../../../core/builder/api-builder-base';
-import { ZError } from '../../../core/core-errors';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
-import { ZHttpClientRequest } from './http-client-request';
-import { ZClientHttpConfig } from './http-client-types';
+import { ZClientWSConfig } from './ws-client-types';
+import { ZSocket } from './ws-socket';
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
@@ -22,11 +21,15 @@ export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
     : never;
 };
 
-export class ZHttpClientCallerBuilder<
+export class WsClientCallerBuilder<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > extends ApiBuilderBase<ApiBuilderMap<Procedures>> {
-  constructor(protected api: ZAPI, private config: ZClientHttpConfig) {
+  constructor(
+    protected api: ZAPI,
+    private socket: ZSocket,
+    private config: ZClientWSConfig
+  ) {
     super(api);
   }
 
@@ -34,24 +37,26 @@ export class ZHttpClientCallerBuilder<
     procedurePath: string
   ): MethodBuilderReturn<any, Promise<any>> {
     return async (input) => {
-      const procedureData = this.api.proceduresDataParsers.get(procedurePath);
+      return new Promise((resolve, reject) => {
+        const callId = this.socket.callRemoteProcedure(procedurePath, input);
+        const tm = setTimeout(() => {
+          reject(
+            new Error(
+              `Call timeout, procedure: ${procedurePath}, call id: ${callId}`
+            )
+          );
+        }, this.config.responseTimeout);
 
-      const clientRequest = new ZHttpClientRequest(procedureData, input);
+        this.socket.waitCallResponse(callId, (err, output) => {
+          clearTimeout(tm);
 
-      const requestBase: RequestInit = this.config?.requestBuilder
-        ? await this.config.requestBuilder()
-        : {};
-
-      const response = await clientRequest.fetch(
-        this.config.url as string,
-        requestBase
-      );
-
-      if (ZError.is(response)) {
-        throw ZError.factory(response);
-      }
-
-      return response as any;
+          if (err) {
+            reject(err);
+          } else {
+            resolve(output);
+          }
+        });
+      });
     };
   }
 }

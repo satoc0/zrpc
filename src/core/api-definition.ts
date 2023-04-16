@@ -1,7 +1,7 @@
 import { SchemaBase } from './schemas';
 import { ProtobufTypesWithOptional } from './schema-types';
 
-export interface ApiDefinition<
+export interface ApiConfig<
   Procedures extends ApiProceduresMap = ApiProceduresMap
 > {
   /**

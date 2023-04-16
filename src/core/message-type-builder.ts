@@ -1,11 +1,7 @@
 import { Field, Type } from 'protobufjs/light';
 import { SchemaDefinition, SchemaTypes } from './api-definition';
 import { MESSAGE_START_FIELD_OFFSET } from './constants';
-import {
-  ProcedureDataSide,
-  ProtobufDefaultFieldTypes,
-  ProtobufTypesWithOptional,
-} from './schema-types';
+import { ProcedureDataSide, ProtobufTypesWithOptional } from './schema-types';
 
 function typeOrFieldBuilder(
   name: string,
@@ -47,49 +43,6 @@ function typeOrFieldBuilder(
   return rightField;
 }
 
-type MetadataField = {
-  fieldName: string;
-  fieldId: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
-  type: ProtobufDefaultFieldTypes;
-  isOptional: boolean;
-};
-
-export enum MessageType {
-  Call,
-  CallResponse,
-}
-
-export const PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE: MetadataField = {
-  fieldName: 'zrpc__meta__messageType',
-  fieldId: 1,
-  type: 'uint32',
-  isOptional: false,
-};
-
-export const PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME: MetadataField = {
-  fieldName: 'zrpc__meta__procedureName',
-  fieldId: 2,
-  type: 'string',
-  isOptional: false,
-};
-
-const allProcedureMetadataFields: MetadataField[] = [
-  PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE,
-  PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME,
-];
-
-function addProcedureMetadataFields(rootType: Type) {
-  for (const procedureMetadataField of allProcedureMetadataFields) {
-    const field = new Field(
-      procedureMetadataField.fieldName,
-      procedureMetadataField.fieldId,
-      procedureMetadataField.type,
-      procedureMetadataField.isOptional ? 'optional' : 'required'
-    );
-    rootType.add(field);
-  }
-}
-
 export function protobufTypeBuilder(name: string, schema: SchemaDefinition) {
   const rootType = new Type(name);
 
@@ -111,8 +64,5 @@ export function protobufProcedureTypeBuilder(
 ) {
   const typeName = `${side}__${schemaName}`.replace(nameReplaceRegExp, '');
   const type = protobufTypeBuilder(typeName, schema);
-
-  addProcedureMetadataFields(type);
-
   return type;
 }

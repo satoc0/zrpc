@@ -1,14 +1,21 @@
-import { ZHttpClient } from '../src';
+import { ZHttpClient, ZWSClient } from '../src';
 import { api } from './index';
 
 (async () => {
-  const client = new ZHttpClient(api, { url: 'http://localhost:3000' });
+  const httpClient = new ZHttpClient(api, { url: 'http://localhost:3000' });
+  const wsClient = new ZWSClient(api, { url: 'http://localhost:3000' });
 
-  const response = await client.call.account.get({ name: '2' });
+  wsClient.handle.account.get(async (input) => {
+    return { data: input.name };
+  });
+
+  const wtf = await wsClient.call.account.get({ name: '' });
+
+  const response = await httpClient.call.account.get({ name: '2' });
 
   console.log({ response });
 
-  const response2 = await client.call.getAccount({
+  const response2 = await httpClient.call.getAccount({
     square: 2,
     optional: null,
   });

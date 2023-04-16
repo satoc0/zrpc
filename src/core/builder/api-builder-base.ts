@@ -1,3 +1,4 @@
+import { ZRPC } from '../../zrpc';
 import { ApiProceduresMap, ApiProceduresSchemas } from '../api-definition';
 import { isProcedureSchema } from '../procedures/procedure-data';
 
@@ -11,8 +12,16 @@ export type ApiBuilderMapAbstraction<
     : object;
 };
 
-export abstract class ApiBuilderBase {
-  protected abstract readonly methods: ApiBuilderMapAbstraction;
+export type MethodBuilderReturn<I = unknown, O = unknown> = (input: I) => O;
+
+export abstract class ApiBuilderBase<
+  BuilderMap extends ApiBuilderMapAbstraction = ApiBuilderMapAbstraction
+> {
+  public readonly methods: BuilderMap = {} as BuilderMap;
+
+  constructor(api: ZRPC) {
+    this.makeBuilder(this.methods, api.apiDefinition.procedures);
+  }
 
   protected makeBuilder(
     builderMapTarget: ApiBuilderMapAbstraction,
@@ -31,7 +40,7 @@ export abstract class ApiBuilderBase {
           '/'
         );
 
-        builderMapTarget[procedureName] = this.methodBuilder(procedurePath);
+        builderMapTarget[procedureName] = this.methodFactory(procedurePath);
       } else {
         builderMapTarget[procedureName] = {};
 
@@ -46,7 +55,5 @@ export abstract class ApiBuilderBase {
     }
   }
 
-  protected abstract methodBuilder(
-    methodPathName: string
-  ): (input: unknown) => unknown;
+  protected abstract methodFactory(methodPathName: string): MethodBuilderReturn;
 }

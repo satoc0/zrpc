@@ -9,17 +9,14 @@ import {
 export class ServerApiBuilder<
   ZAPI extends ZRPC,
   ConstructorMap extends Record<string, any>
-> extends ApiBuilderBase {
+> extends ApiBuilderBase<ConstructorMap> {
   private handlers: Map<string, ProcedureExecutor<any, any>> = new Map();
 
-  public readonly methods: ConstructorMap = {} as ConstructorMap;
-
   constructor(private def: ZAPI) {
-    super();
-    this.makeBuilder(this.methods, this.def.apiDefinition.procedures);
+    super(def);
   }
 
-  protected methodBuilder(procedurePath: string): (handler: any) => any {
+  protected methodFactory(procedurePath: string): (handler: any) => any {
     return (handler: ProcedureHandlerFunction<any, any>) => {
       this.handlers.set(
         procedurePath,
@@ -28,7 +25,7 @@ export class ServerApiBuilder<
     };
   }
 
-  public getHandler(procedurePath: string) {
+  public get(procedurePath: string) {
     const handler = this.handlers.get(procedurePath);
 
     if (!handler) {

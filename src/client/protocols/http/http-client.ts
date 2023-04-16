@@ -10,8 +10,11 @@ export class ZHttpClient<
 > extends ZClientProtocolBase<ZAPI, ZClientHttpConfig> {
   protected caller: ZHttpClientCallerBuilder<ZAPI, Procedures>;
 
-  constructor(protected def: ZAPI, protected config?: ZClientHttpConfig) {
+  constructor(protected def: ZAPI, protected config: ZClientHttpConfig = {}) {
     super();
+
+    this.config.url ||= window.location.origin;
+
     this.caller = new ZHttpClientCallerBuilder(this.def, this.config);
   }
 

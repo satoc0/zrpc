@@ -11,18 +11,13 @@ import {
   ParserDataError,
   ProcedureParserNotFound,
 } from '../core-errors';
+import { protobufProcedureTypeBuilder } from '../message-type-builder';
 import {
   ProcedureDataOperation,
   ProcedureDataSide,
   Properties,
 } from '../schema-types';
 import { SchemaBase } from '../schemas';
-import {
-  MessageType,
-  PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE,
-  PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME,
-  protobufProcedureTypeBuilder,
-} from '../message-type-builder';
 
 export function encodeByClassSchema<
   Schema extends typeof SchemaBase,
@@ -72,18 +67,6 @@ abstract class ZProcedureDataParserSchema {
 
   abstract encode(data: object): Uint8Array;
   abstract decode(buffer: Buffer): object;
-
-  populateDefaultMeta(targetObject: any) {
-    targetObject[PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE.fieldName] =
-      MessageType.Call;
-    targetObject[PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME.fieldName] =
-      this.procedureName;
-  }
-
-  cleanUpMetadata(targetObject: any) {
-    delete targetObject[PROCEDURE_SCHEMA_METADATA_MESSAGE_TYPE.fieldName];
-    delete targetObject[PROCEDURE_SCHEMA_METADATA_PROCEDURE_NAME.fieldName];
-  }
 }
 
 export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSchema {
@@ -106,10 +89,6 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
 
   public encode(data: object): Uint8Array {
     try {
-      const workObject = structuredClone(data);
-
-      this.populateDefaultMeta(workObject);
-
       const message = this.schema.create(data);
       const buffer = this.schema.encode(message).finish();
       return buffer;
@@ -118,14 +97,10 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
     }
   }
 
-  public decode(buffer: Buffer, cleanUpMetadata = true): object {
+  public decode(buffer: Buffer): object {
     try {
       const message = this.schema.decode(buffer);
       const decodedObject = message.toJSON();
-
-      if (cleanUpMetadata) {
-        this.cleanUpMetadata(decodedObject);
-      }
 
       return decodedObject;
     } catch (e) {
@@ -146,10 +121,6 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
 
   public encode(data: object): Uint8Array {
     try {
-      const workObject = structuredClone(data);
-
-      this.populateDefaultMeta(workObject);
-
       const result = encodeByClassSchema(this.schema, data);
       return result;
     } catch (e) {

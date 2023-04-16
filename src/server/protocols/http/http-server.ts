@@ -46,7 +46,7 @@ export class ZHttpServer<
 
         const procedureName: string = procedurePathArr.join('/');
 
-        const handler = this.builder.getHandler(procedureName);
+        const handler = this.builder.get(procedureName);
 
         await this.runMiddlewares(req, res);
 
