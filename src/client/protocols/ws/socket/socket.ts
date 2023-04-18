@@ -1,20 +1,20 @@
 import { ZRPC } from '../../../../zrpc';
-import { ZClientWSConfig } from '../ws-client-types';
+import { ClientWSConfig } from '../client-types';
 import { SocketConnection } from './socket-connection';
 import { SocketMessages } from './socket-messages';
 
-const DEFAULT_PING_INTERVAL = 30000;
-const DEFAULT_PING_TIMEOUT = 30000;
 const DEFAULT_RESPONSE_TIMEOUT = 30000;
+const DEFAULT_CONNECTION_TIMEOUT = 5000;
+const DEFAULT_PING_INTERVAL = 3000;
+const DEFAULT_PING_TIMEOUT = 10000;
 
 export class ZSocket {
-  private isAlive = false;
+  public readonly connection: SocketConnection;
 
-  public connection: SocketConnection;
+  public readonly messages: SocketMessages;
 
-  public messages: SocketMessages;
-
-  constructor(protected api: ZRPC, protected config: ZClientWSConfig) {
+  constructor(protected api: ZRPC, protected config: ClientWSConfig) {
+    config.connectionTimeout ??= DEFAULT_CONNECTION_TIMEOUT;
     config.pingInterval ??= DEFAULT_PING_INTERVAL;
     config.pingTimeout ??= DEFAULT_PING_TIMEOUT;
     config.responseTimeout ??= DEFAULT_RESPONSE_TIMEOUT;

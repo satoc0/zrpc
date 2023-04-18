@@ -2,21 +2,21 @@ import { ApiProceduresMap } from '../../../core';
 import { ZClientBidirectionalProtocolBase } from '../../../core/protocols/client-protocol-base';
 import { ZRPC } from '../../../zrpc';
 import { ZSocket } from './socket/socket';
-import { WsClientCallerBuilder } from './ws-client-caller-builder';
-import { WsClientHandlerBuilder } from './ws-client-handler-builder';
-import { ZClientWSConfig } from './ws-client-types';
+import { WsClientCallerBuilder } from './client-caller-builder';
+import { WsClientHandlerBuilder } from './client-handler-builder';
+import { ClientWSConfig } from './client-types';
 
 export class ZWSClient<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> extends ZClientBidirectionalProtocolBase<ZAPI, ZClientWSConfig> {
+> extends ZClientBidirectionalProtocolBase<ZAPI, ClientWSConfig> {
   protected caller: WsClientCallerBuilder<ZAPI, Procedures>;
 
   protected handler: WsClientHandlerBuilder<ZAPI, Procedures>;
 
   public readonly socket!: ZSocket;
 
-  constructor(protected def: ZAPI, protected config: ZClientWSConfig = {}) {
+  constructor(protected def: ZAPI, protected config: ClientWSConfig = {}) {
     super();
 
     this.config.url ||= window.location.origin;
@@ -41,7 +41,7 @@ export class ZWSClient<
     return this.handler.methods;
   }
 
-  updateConfig(config: Partial<ZClientWSConfig>) {
+  updateConfig(config: Partial<ClientWSConfig>) {
     this.config = { ...this.config, ...config };
   }
 }

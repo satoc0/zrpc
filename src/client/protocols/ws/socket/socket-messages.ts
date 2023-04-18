@@ -6,7 +6,7 @@ import {
   isPingOrPongBufferMessage,
 } from '../../../../core/protocols/ws/socket-message';
 import { ZRPC } from '../../../../zrpc';
-import { ZClientWSConfig } from '../ws-client-types';
+import { ClientWSConfig } from '../client-types';
 import { SocketConnection, SocketEventMessage } from './socket-connection';
 
 export type SubscriptionHandler = (input: object) => AcceptPromise<object>;
@@ -23,7 +23,7 @@ export class SocketMessages {
 
   constructor(
     protected api: ZRPC,
-    protected config: ZClientWSConfig,
+    protected config: ClientWSConfig,
     public connection: SocketConnection
   ) {
     this.init();

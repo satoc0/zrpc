@@ -6,7 +6,7 @@ import { ApiBuilderBase } from '../../../core/builder/api-builder-base';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
 import { ZSocket } from './socket/socket';
-import { ZClientWSConfig } from './ws-client-types';
+import { ClientWSConfig } from './client-types';
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
@@ -27,7 +27,7 @@ export class WsClientHandlerBuilder<
   constructor(
     protected api: ZAPI,
     private socket: ZSocket,
-    private config: ZClientWSConfig
+    private config: ClientWSConfig
   ) {
     super(api);
   }

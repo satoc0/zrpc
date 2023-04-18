@@ -8,7 +8,7 @@ import {
   isPingOrPongBufferMessage,
 } from '../../../../core/protocols/ws/socket-message';
 import { ZRPC } from '../../../../zrpc';
-import { ZClientWSConfig } from '../ws-client-types';
+import { ClientWSConfig } from '../client-types';
 
 export type SocketEventMessage = MessageEvent<ArrayBuffer>;
 
@@ -36,8 +36,8 @@ export class SocketConnection {
 
   private currentReconnectionAtemps = 0;
 
-  constructor(protected api: ZRPC, protected config: ZClientWSConfig) {
-    this.initConnection();
+  constructor(protected api: ZRPC, protected config: ClientWSConfig) {
+    this.connect();
     this.addNetworkChangeEvents();
   }
 
@@ -60,7 +60,7 @@ export class SocketConnection {
   private onNetworkOnline = () => {
     if (this.isAlive) return;
 
-    this.initConnection();
+    this.connect();
   };
 
   public destroy() {
@@ -73,7 +73,7 @@ export class SocketConnection {
     return !explicitDisconnectionReasons.includes(reason);
   }
 
-  private initConnection() {
+  private connect() {
     const initializeErrorOrCloseEventHandler = (ev: Event | CloseEvent) => {
       const isCloseEvent = ev instanceof CloseEvent;
 
@@ -139,7 +139,7 @@ export class SocketConnection {
         return;
       }
 
-      this.initConnection();
+      this.connect();
       ++this.currentReconnectionAtemps;
     }, this.config.reconnectionTryInterval);
   }
@@ -204,9 +204,9 @@ export class SocketConnection {
 
   public ping() {
     this.ws.send(PING_BUFFER);
+    this.isAlive = false;
 
     this.pingTimeoutId = setTimeout(() => {
-      this.isAlive = false;
       this.cleanUpCurrentConnection();
       this.tryReconnect();
     }, (this.config.pingTimeout as number) + LATENCY_ASSUMPTION_MS);

@@ -9,13 +9,13 @@ export type ServerConfig<
 };
 
 export abstract class ZServerProtocolBase<ZAPI extends ZRPC = ZRPC> {
-  protected abstract builder: ApiBuilderBase;
+  protected abstract builder?: ApiBuilderBase;
 
-  protected abstract def: ZAPI;
+  protected abstract api: ZAPI;
 
   protected abstract config?: ServerConfig;
 
-  abstract handle: ApiBuilderBase['methods'];
+  abstract handle?: ApiBuilderBase['methods'];
 
   public abstract attach(httpServer: Server): void;
 

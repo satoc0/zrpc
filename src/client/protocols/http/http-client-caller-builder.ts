@@ -9,8 +9,8 @@ import {
 import { ZError } from '../../../core/core-errors';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
-import { ZHttpClientRequest } from './http-client-request';
-import { ZClientHttpConfig } from './http-client-types';
+import { HttpClientRequest } from './http-client-request';
+import { ClientHttpConfig } from './http-client-types';
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
@@ -22,11 +22,11 @@ export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
     : never;
 };
 
-export class ZHttpClientCallerBuilder<
+export class HttpClientCallerBuilder<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > extends ApiBuilderBase<ApiBuilderMap<Procedures>> {
-  constructor(protected api: ZAPI, private config: ZClientHttpConfig) {
+  constructor(protected api: ZAPI, private config: ClientHttpConfig) {
     super(api);
   }
 
@@ -36,7 +36,7 @@ export class ZHttpClientCallerBuilder<
     return async (input) => {
       const procedureData = this.api.proceduresDataParsers.get(procedurePath);
 
-      const clientRequest = new ZHttpClientRequest(procedureData, input);
+      const clientRequest = new HttpClientRequest(procedureData, input);
 
       const requestBase: RequestInit = this.config?.requestBuilder
         ? await this.config.requestBuilder()

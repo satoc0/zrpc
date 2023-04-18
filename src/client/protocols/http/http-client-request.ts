@@ -6,7 +6,7 @@ import {
 import { ZError } from '../../../core/core-errors';
 import { ZProcedureDataParser } from '../../../core/procedures/procedure-data';
 
-export class ZHttpClientRequest {
+export class HttpClientRequest {
   private static requiredHeaders: HeadersInit = {
     'content-type': PROTOBUF_CONTENT_TYPE,
     accept: `${PROTOBUF_CONTENT_TYPE}, application/json`,
@@ -48,7 +48,7 @@ export class ZHttpClientRequest {
 
     return {
       ...additionalHeaders,
-      ...ZHttpClientRequest.requiredHeaders,
+      ...HttpClientRequest.requiredHeaders,
     };
   }
 

@@ -11,8 +11,8 @@ import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-bas
 import { ZRPC } from '../../../zrpc';
 import { BodyReadError } from '../../server-errors';
 import { ServerConfig } from '../../server.types';
-import { HttpServerApiBuilder } from './http-api-builder';
-import { HttpContext } from './http-context';
+import { HttpServerApiBuilder } from './api-builder';
+import { HttpContext } from './context';
 
 export class ZHttpServer<
   ZAPI extends ZRPC,
@@ -21,7 +21,7 @@ export class ZHttpServer<
   protected builder!: HttpServerApiBuilder<ZAPI, Procedures>;
 
   constructor(
-    protected def: ZAPI,
+    protected api: ZAPI,
     protected config?: ServerConfig<
       (
         req: IncomingMessage,
@@ -30,7 +30,7 @@ export class ZHttpServer<
     >
   ) {
     super();
-    this.builder = new HttpServerApiBuilder(def);
+    this.builder = new HttpServerApiBuilder(api);
   }
 
   get handle() {
@@ -50,10 +50,10 @@ export class ZHttpServer<
 
         await this.runMiddlewares(req, res);
 
-        const buffer = await this.readBuffer(req, procedureName);
+        const inputBuffer = await this.readBodyBuffer(req, procedureName);
 
-        const procedureData = this.def.proceduresDataParsers.get(procedureName);
-        const inputDecodedData = procedureData.input.decode(buffer);
+        const procedureData = this.api.proceduresDataParsers.get(procedureName);
+        const inputDecodedData = procedureData.input.decode(inputBuffer);
         const context = new HttpContext(req, res, inputDecodedData);
 
         const handlerResult = await handler.run(context);
@@ -112,7 +112,7 @@ export class ZHttpServer<
     res.end(data, 'binary');
   }
 
-  private async readBuffer(
+  private async readBodyBuffer(
     req: IncomingMessage,
     procedureName: string
   ): Promise<Buffer> {

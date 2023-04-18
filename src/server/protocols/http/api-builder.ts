@@ -6,24 +6,24 @@ import {
 } from '../../../core';
 import { ZRPC } from '../../../zrpc';
 import { ServerApiBuilder } from '../../server-api-builder';
-import { WSContext } from './ws-context';
+import { HttpContext } from './context';
 
-type HandlerSet<
+type HandlerSetter<
   Schema extends ApiProceduresSchemas,
-  CTX = WSContext<SchemaToType<Schema['input']>>
+  CTX = HttpContext<SchemaToType<Schema['input']>>
 > = (
   handler: (ctx: CTX) => AcceptPromise<SchemaToType<Schema['output']>>
 ) => void;
 
 export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
   [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
-    ? HandlerSet<Root[Key]>
+    ? HandlerSetter<Root[Key]>
     : Root[Key] extends ApiProceduresMap
     ? ApiBuilderMap<Root[Key]>
     : never;
 };
 
-export class WSServerApiBuilder<
+export class HttpServerApiBuilder<
   ZAPI extends ZRPC,
   Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
 > extends ServerApiBuilder<ZAPI, ApiBuilderMap<Procedures>> {}

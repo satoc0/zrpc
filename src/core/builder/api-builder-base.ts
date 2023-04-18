@@ -19,7 +19,7 @@ export abstract class ApiBuilderBase<
 > {
   public readonly methods: BuilderMap = {} as BuilderMap;
 
-  constructor(api: ZRPC) {
+  constructor(protected api: ZRPC) {
     this.makeBuilder(this.methods, api.apiDefinition.procedures);
   }
 
@@ -55,5 +55,7 @@ export abstract class ApiBuilderBase<
     }
   }
 
-  protected abstract methodFactory(methodPathName: string): MethodBuilderReturn;
+  protected abstract methodFactory(
+    methodPathName: string
+  ): MethodBuilderReturn<any, any>;
 }
