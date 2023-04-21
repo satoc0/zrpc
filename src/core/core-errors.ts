@@ -25,6 +25,12 @@ export class ZError extends Error {
     return !!obj.isZError;
   }
 
+  static factoryFromBuffer(buffer: Uint8Array): ZError {
+    const errorData = ZError.schema.decode(buffer).toJSON();
+
+    return ZError.factory(errorData as ZErrorData);
+  }
+
   static factory(data: ZErrorData): ZError {
     return new ZError(data);
   }

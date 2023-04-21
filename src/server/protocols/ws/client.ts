@@ -3,17 +3,17 @@ import { WSServerClientCallerBuilder } from './client-caller-builder';
 import { WSServerClientHandlerBuilder } from './client-handler-builder';
 
 export class WsClient<ZAPI extends ZRPC> {
-  protected caller!: WSServerClientCallerBuilder<ZAPI>;
-
-  protected handler!: WSServerClientHandlerBuilder<ZAPI>;
-
-  constructor(private clientId: string) {}
+  constructor(
+    private clientId: string,
+    private caller: WSServerClientCallerBuilder<ZAPI>,
+    private handler: WSServerClientHandlerBuilder<ZAPI>
+  ) {}
 
   get handle() {
     return this.handler.methods;
   }
 
   get call() {
-    return this.handle.caller;
+    return this.caller.methods;
   }
 }

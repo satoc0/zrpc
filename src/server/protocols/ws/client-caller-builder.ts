@@ -9,8 +9,6 @@ import {
   MethodBuilderReturn,
 } from '../../../core/builder/api-builder-base';
 import { ZRPC } from '../../../zrpc';
-import { WsClient } from './client';
-import { SocketHandler } from './socket';
 
 type HandlerSet<Schema extends ApiProceduresSchemas> = (
   input: SchemaToType<Schema['input']>
@@ -24,33 +22,21 @@ export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
     : never;
 };
 
-export class WSServerClientCallerBuilder<
-  ZAPI extends ZRPC,
-  Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> extends ApiBuilderBase<ApiBuilderMap<Procedures>> {
-  socket!: SocketHandler;
+export type SocketProcedureCaller = (
+  methodName: string,
+  input: any
+) => Promise<any>;
 
-  constructor(protected api: ZAPI, protected client: WsClient<ZAPI>) {
-    super(api);
-  }
+export class WSServerClientCallerBuilder<
+  ZAPI extends ZRPC
+> extends ApiBuilderBase<ApiBuilderMap<ZAPI['apiDefinition']['procedures']>> {
+  socketProcedureCaller!: SocketProcedureCaller;
 
   protected methodFactory(
     methodPathName: string
   ): MethodBuilderReturn<unknown, unknown> {
-    throw new Error('Method not implemented.');
+    return (input) => {
+      return this.socketProcedureCaller(methodPathName, input);
+    };
   }
-
-  setSocket(socket: SocketHandler) {
-    if (this.socket) {
-      this.cleanUpCurrentSocket();
-    }
-
-    this.socket = socket;
-
-    this.setupSocket();
-  }
-
-  private cleanUpCurrentSocket() {}
-
-  private setupSocket() {}
 }

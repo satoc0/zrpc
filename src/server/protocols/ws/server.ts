@@ -5,10 +5,17 @@ import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-bas
 import { ZRPC } from '../../../zrpc';
 import { ServerConfig } from '../../server.types';
 import { WsClient } from './client';
-import { SocketHandler } from './socket';
-import { WsClientCoordinator } from './client-coordinator';
+import { ClientCoordinator } from './client-coordinator';
+import { ResponseCallbacksMap } from './types';
 
 type OnConnectionHandler<ZAPI extends ZRPC> = (client: WsClient<ZAPI>) => void;
+
+export type WebSocketServerConfig = ServerConfig<
+  (req: IncomingMessage) => AcceptPromise<void>
+> & {
+  pingInterval?: number;
+  callTimeout?: number;
+};
 
 export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
   protected builder: undefined;
@@ -17,20 +24,24 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
 
   public readonly wss = new WebSocketServer({ noServer: true });
 
-  public clientsCoordinators: Map<string, WsClientCoordinator<ZAPI>> =
-    new Map();
+  public clientsCoordinators: Map<string, ClientCoordinator<ZAPI>> = new Map();
 
   public pingPongIntervalIntervalId!: NodeJS.Timer;
 
+  public rejectCallTimeoutsIntervalId!: NodeJS.Timer;
+
   private onConnectionHandler!: OnConnectionHandler<ZAPI>;
+
+  private responseCallbacksMap: ResponseCallbacksMap = new Map();
 
   constructor(
     protected api: ZAPI,
-    protected config?: ServerConfig<
-      (req: IncomingMessage) => AcceptPromise<void>
-    >
+    protected config: WebSocketServerConfig = {}
   ) {
     super();
+
+    config.callTimeout ||= 10000;
+    config.pingInterval ||= 10000;
   }
 
   public async attach(httpServer: Server) {
@@ -48,21 +59,22 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
 
       const clientCoordinator = this.getClientCoordinator(clientId);
 
-      this.wss.handleUpgrade(req, socket, head, (webSocketClient) => {
-        const zSocket = new SocketHandler(webSocketClient);
-        clientCoordinator.setSocket(zSocket);
+      this.wss.handleUpgrade(req, socket, head, (wsSocket) => {
+        clientCoordinator.setSocket(wsSocket);
 
         this.onConnectionHandler?.(clientCoordinator.getClient());
 
-        this.wss.emit('connection', webSocketClient, req);
+        this.wss.emit('connection', wsSocket, req);
       });
     });
 
     httpServer.on('close', () => {
       this.stopPingPongGame();
+      this.stopRejectCallsTimeouts();
     });
 
     this.initPingPongGame();
+    this.initRejectCallsTimeouts();
   }
 
   private getClientCoordinator(clientId: string) {
@@ -71,7 +83,12 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
       return client;
     }
 
-    return new WsClientCoordinator(this.api, clientId);
+    return new ClientCoordinator(
+      this.api,
+      clientId,
+      this.config,
+      this.responseCallbacksMap
+    );
   }
 
   protected async runMiddlewares(req: IncomingMessage) {
@@ -83,17 +100,38 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
   }
 
   private initPingPongGame() {
-    this.pingPongIntervalIntervalId = setInterval(this.pinger, 30000);
+    this.pingPongIntervalIntervalId = setInterval(
+      (clientsCoordinators) => {
+        for (const [, client] of clientsCoordinators) {
+          client.ping();
+        }
+      },
+      this.config.pingInterval,
+      this.clientsCoordinators
+    );
+  }
+
+  private initRejectCallsTimeouts() {
+    this.rejectCallTimeoutsIntervalId = setInterval(
+      (responseWaiters) => {
+        const now = Date.now();
+        for (const [, waiter] of responseWaiters) {
+          if (waiter.expireAt < now) {
+            waiter.reject(new Error('Response timeout'));
+          }
+        }
+      },
+      5000,
+      this.responseCallbacksMap
+    );
   }
 
   private stopPingPongGame() {
     clearInterval(this.pingPongIntervalIntervalId);
   }
 
-  private pinger() {
-    for (const [, client] of this.clientsCoordinators) {
-      client.ping();
-    }
+  private stopRejectCallsTimeouts() {
+    clearInterval(this.rejectCallTimeoutsIntervalId);
   }
 
   onConnection(handler: OnConnectionHandler<ZAPI>) {

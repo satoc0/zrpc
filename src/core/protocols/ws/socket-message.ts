@@ -3,11 +3,13 @@ import { Buffer } from 'buffer';
 export enum SocketMessageType {
   Call = 0,
   CallReponse = 1,
+  CallReponseError = 2,
 }
 
 const MessageTypeBuffers: Record<SocketMessageType, Uint8Array> = {
   [SocketMessageType.Call]: new Uint8Array([0]),
   [SocketMessageType.CallReponse]: new Uint8Array([1]),
+  [SocketMessageType.CallReponseError]: new Uint8Array([2]),
 };
 
 export enum PingPongMessage {
@@ -36,10 +38,6 @@ export function isPingOrPongBufferMessage(
   );
 }
 
-/**
- * One byte for packetType, one byte for callId and one byte for
- * procedure name length
- */
 const PACKET_METADATA_BYTES_LENGTH = 3;
 const MAX_PROCEDURE_BYTE_LENGTH = 255;
 
@@ -50,10 +48,8 @@ export interface SocketMessage {
   dataBuffer: Uint8Array;
 }
 
-function uint8Buffer(num: number): Buffer {
-  const buffer = Buffer.alloc(1);
-  buffer.writeUint8(num);
-  return buffer;
+function uint8Buffer(num: number): Uint8Array {
+  return new Uint8Array([num]);
 }
 
 /**
@@ -87,10 +83,10 @@ export class SocketMessageParser {
     ]);
   }
 
-  static decode(buffer: Buffer): SocketMessage {
-    const messageType = buffer.readUint8(0);
-    const callId = buffer.readUint8(1);
-    const procedureNameLength = buffer.readUint8(2);
+  static decode(buffer: Uint8Array): SocketMessage {
+    const messageType = buffer[0];
+    const callId = buffer[1];
+    const procedureNameLength = buffer[2];
 
     const procedureNameBuffer = buffer.subarray(
       PACKET_METADATA_BYTES_LENGTH,

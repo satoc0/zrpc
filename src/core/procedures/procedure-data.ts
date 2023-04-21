@@ -1,4 +1,3 @@
-import { Buffer } from 'buffer';
 import { Type } from 'protobufjs';
 import {
   ApiProceduresMap,
@@ -36,7 +35,7 @@ export function encodeByClassSchema<
 
 export function decodeByClassSchema<O extends object>(
   schema: typeof SchemaBase,
-  buffer: Buffer
+  buffer: Uint8Array
 ): O {
   const schemaObject = schema.decode(buffer);
   const decodedData = schema.toObject(schemaObject);
@@ -66,7 +65,7 @@ abstract class ZProcedureDataParserSchema {
   }
 
   abstract encode(data: object): Uint8Array;
-  abstract decode(buffer: Buffer): object;
+  abstract decode(buffer: Uint8Array): object;
 }
 
 export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSchema {
@@ -97,7 +96,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
     }
   }
 
-  public decode(buffer: Buffer): object {
+  public decode(buffer: Uint8Array): object {
     try {
       const message = this.schema.decode(buffer);
       const decodedObject = message.toJSON();
@@ -128,7 +127,7 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
     }
   }
 
-  public decode(buffer: Buffer): object {
+  public decode(buffer: Uint8Array): object {
     try {
       const result = decodeByClassSchema(this.schema, buffer);
       return result;
