@@ -45,8 +45,8 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
     httpServer.on('upgrade', async (req, socket, head) => {
       await this.runMiddlewares(req);
 
-      const url = new URL(req.url as string);
-      const clientId = url.searchParams.get('clientId') as string;
+      const searchParams = new URLSearchParams(req.url as string);
+      const clientId = searchParams.get('clientId') as string;
 
       if (!clientId) {
         socket.destroy(new Error('clientId not specified'));
