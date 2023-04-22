@@ -22,4 +22,9 @@ export class ZSocket {
     this.connection = new SocketConnection(api, config);
     this.messages = new SocketMessages(api, config, this.connection);
   }
+
+  destroy() {
+    this.messages.destroy();
+    this.connection.destroy();
+  }
 }

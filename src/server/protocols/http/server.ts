@@ -1,6 +1,5 @@
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
-
-import { AcceptPromise, ApiProceduresMap } from '../../../core';
+import { ApiProceduresMap } from '../../../core';
 import {
   HTTP_ERROR_STATUS_CODE,
   HTTP_SUCCESS_STATUS_CODE,
@@ -10,9 +9,9 @@ import { ZError } from '../../../core/core-errors';
 import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-base';
 import { ZRPC } from '../../../zrpc';
 import { BodyReadError } from '../../server-errors';
-import { ServerConfig } from '../../server.types';
 import { HttpServerApiBuilder } from './api-builder';
 import { HttpContext } from './context';
+import { HttpServerConfig } from './types';
 
 export class ZHttpServer<
   ZAPI extends ZRPC,
@@ -20,16 +19,9 @@ export class ZHttpServer<
 > extends ZServerProtocolBase {
   protected builder!: HttpServerApiBuilder<ZAPI, Procedures>;
 
-  constructor(
-    protected api: ZAPI,
-    protected config?: ServerConfig<
-      (
-        req: IncomingMessage,
-        res: ServerResponse<IncomingMessage>
-      ) => AcceptPromise<void>
-    >
-  ) {
+  constructor(protected api: ZAPI, protected config: HttpServerConfig = {}) {
     super();
+    config.baseUrl ||= '/';
     this.builder = new HttpServerApiBuilder(api);
   }
 
@@ -40,7 +32,9 @@ export class ZHttpServer<
   public async attach(httpServer: Server) {
     httpServer.addListener('request', async (req, res) => {
       try {
-        const procedurePathArr = (req.url as string).split('/');
+        const procedurePathArr = (req.url as string).split(
+          this.config.baseUrl as string
+        );
 
         procedurePathArr.shift();
 

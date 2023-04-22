@@ -1,21 +1,12 @@
 import type { IncomingMessage, Server } from 'node:http';
 import { WebSocketServer } from 'ws';
-import { AcceptPromise } from '../../../core';
 import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-base';
 import { ZRPC } from '../../../zrpc';
-import { ServerConfig } from '../../server.types';
 import { WsClient } from './client';
 import { ClientCoordinator } from './client-coordinator';
-import { ResponseCallbacksMap } from './types';
+import { ResponseCallbacksMap, WebSocketServerConfig } from './types';
 
 type OnConnectionHandler<ZAPI extends ZRPC> = (client: WsClient<ZAPI>) => void;
-
-export type WebSocketServerConfig = ServerConfig<
-  (req: IncomingMessage) => AcceptPromise<void>
-> & {
-  pingInterval?: number;
-  callTimeout?: number;
-};
 
 export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
   protected builder: undefined;

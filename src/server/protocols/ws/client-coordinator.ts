@@ -3,9 +3,8 @@ import { ZRPC } from '../../../zrpc';
 import { WsClient } from './client';
 import { WSServerClientCallerBuilder } from './client-caller-builder';
 import { WSServerClientHandlerBuilder } from './client-handler-builder';
-import { WebSocketServerConfig } from './server';
 import { SocketHandler } from './socket';
-import { ResponseCallbacksMap } from './types';
+import { ResponseCallbacksMap, WebSocketServerConfig } from './types';
 
 const MAX_CALL_ID = 255;
 

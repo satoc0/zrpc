@@ -34,7 +34,9 @@ export class SocketConnection {
 
   private pingTimeoutId!: NodeJS.Timeout;
 
-  private currentReconnectionAtemps = 0;
+  private currentReconnectionAttemps = 0;
+
+  procedureMessageHandler!: (message: SocketEventMessage) => void;
 
   constructor(protected api: ZRPC, protected config: ClientWSConfig) {
     this.connect();
@@ -132,15 +134,15 @@ export class SocketConnection {
   private tryReconnect() {
     setTimeout(() => {
       if (
-        this.currentReconnectionAtemps === this.config.reconnectionMaxAttemps
+        this.currentReconnectionAttemps === this.config.reconnectionMaxAttemps
       ) {
         console.error(new Error('Maximum reconnection attempts reached.'));
-        this.currentReconnectionAtemps = 0;
+        this.currentReconnectionAttemps = 0;
         return;
       }
 
       this.connect();
-      ++this.currentReconnectionAtemps;
+      ++this.currentReconnectionAttemps;
     }, this.config.reconnectionTryInterval);
   }
 
@@ -154,10 +156,6 @@ export class SocketConnection {
   private cleanUpCurrentConnection() {
     this.stopPingPongGame();
     this.removeMessageListenerForWSInstance(this.ws);
-  }
-
-  getWS() {
-    return this.ws;
   }
 
   private handleCloseEvent(ev: CloseEvent) {
@@ -195,6 +193,8 @@ export class SocketConnection {
       case PingPongMessage.Pong:
         this.onPong();
         break;
+      default:
+        this.procedureMessageHandler(message);
     }
   };
 
@@ -214,6 +214,7 @@ export class SocketConnection {
 
   private onPong() {
     this.isAlive = true;
+    this.sendQueuedPackets();
     clearTimeout(this.pingTimeoutId);
   }
 

@@ -3,14 +3,17 @@ import {
   SocketMessage,
   SocketMessageParser,
   SocketMessageType,
-  isPingOrPongBufferMessage,
 } from '../../../../core/protocols/ws/socket-message';
 import { ZRPC } from '../../../../zrpc';
 import { ClientWSConfig } from '../client-types';
 import { SocketConnection, SocketEventMessage } from './socket-connection';
 
 export type SubscriptionHandler = (input: object) => AcceptPromise<object>;
-export type ResponseCallback = (err: Error | null, data: object | null) => void;
+export type ResponseCallback = {
+  timeoutId: NodeJS.Timeout;
+  resolve: (input: object) => void;
+  reject: (error: Error) => void;
+};
 
 const MAX_CALL_ID = 255;
 
@@ -19,7 +22,7 @@ export class SocketMessages {
 
   private proceduresHandlers: Map<string, SubscriptionHandler> = new Map();
 
-  private responseWaiters: Map<number, ResponseCallback> = new Map();
+  private callbacks: Map<number, ResponseCallback> = new Map();
 
   constructor(
     protected api: ZRPC,
@@ -30,13 +33,9 @@ export class SocketMessages {
   }
 
   private init() {
-    this.connection
-      .getWS()
-      .addEventListener('message', (message: SocketEventMessage) => {
-        if (isPingOrPongBufferMessage(message.data)) return;
-
-        this.handleMessage(message);
-      });
+    this.connection.procedureMessageHandler = (message: SocketEventMessage) => {
+      this.handleMessage(message);
+    };
   }
 
   private handleMessage(message: SocketEventMessage) {
@@ -46,7 +45,7 @@ export class SocketMessages {
     if (packet.messageType === SocketMessageType.Call) {
       this.callHandler(packet);
     } else {
-      this.callResponseWaiter(packet);
+      this.executeCallback(packet);
     }
   }
 
@@ -69,39 +68,35 @@ export class SocketMessages {
 
     this.connection.sendPacket({
       ...packet,
-      messageType: SocketMessageType.CallReponse,
+      messageType: SocketMessageType.Callback,
       dataBuffer: responseBuffer,
     });
   }
 
-  private callResponseWaiter(packet: SocketMessage) {
-    const callback = this.responseWaiters.get(packet.callId);
+  private executeCallback(message: SocketMessage) {
+    const callback = this.callbacks.get(message.callId);
 
     if (!callback) {
       throw new Error(
-        `Call response handler not found, procedure: ${packet.procedureName}, call id: ${packet.callId}`
+        `Call response handler not found, procedure: ${message.procedureName}, call id: ${message.callId}`
       );
     }
 
     try {
       const dataParsers = this.api.proceduresDataParsers.get(
-        packet.procedureName
+        message.procedureName
       );
 
       const outputData = dataParsers.output.decode(
-        Buffer.from(packet.dataBuffer)
+        Buffer.from(message.dataBuffer)
       );
 
-      callback(null, outputData);
+      callback.resolve(outputData);
     } catch (err) {
-      callback(err as Error, null);
+      callback.reject(err as Error);
     } finally {
-      this.responseWaiters.delete(packet.callId);
+      this.callbacks.delete(message.callId);
     }
-  }
-
-  public waitCallResponse(callId: number, callback: ResponseCallback) {
-    this.responseWaiters.set(callId, callback);
   }
 
   public listen(
@@ -111,21 +106,36 @@ export class SocketMessages {
     this.proceduresHandlers.set(procedurePath, subscriptionHandler);
   }
 
-  public callRemoteProcedure(procedureName: string, data: object): number {
-    const dataParsers = this.api.proceduresDataParsers.get(procedureName);
+  public callRemoteProcedure(
+    procedureName: string,
+    data: object
+  ): Promise<object> {
+    return new Promise((resolve, reject) => {
+      const dataParsers = this.api.proceduresDataParsers.get(procedureName);
+      const dataBuffer = dataParsers.input.encode(data);
 
-    const dataBuffer = dataParsers.input.encode(data);
+      const callId = this.getCallId();
 
-    const callId = this.getCallId();
+      const timeoutId = setTimeout(
+        (procedure: string, cid: number) => {
+          reject(
+            new Error(`Call timeout, procedure: ${procedure}, call id: ${cid}`)
+          );
+        },
+        this.config.responseTimeout,
+        procedureName,
+        callId
+      );
 
-    this.connection.sendPacket({
-      messageType: SocketMessageType.Call,
-      callId,
-      procedureName,
-      dataBuffer,
+      this.callbacks.set(callId, { resolve, reject, timeoutId });
+
+      this.connection.sendPacket({
+        messageType: SocketMessageType.Call,
+        callId,
+        procedureName,
+        dataBuffer,
+      });
     });
-
-    return callId;
   }
 
   private getCallId(): number {
@@ -136,5 +146,10 @@ export class SocketMessages {
     }
 
     return nextId;
+  }
+
+  public destroy() {
+    this.proceduresHandlers.clear();
+    this.callbacks.clear();
   }
 }

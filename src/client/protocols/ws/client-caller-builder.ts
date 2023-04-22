@@ -36,35 +36,8 @@ export class WsClientCallerBuilder<
   protected methodFactory(
     procedurePath: string
   ): MethodBuilderReturn<any, Promise<any>> {
-    return async (input) => {
-      return new Promise((resolve, reject) => {
-        const callId = this.socket.messages.callRemoteProcedure(
-          procedurePath,
-          input
-        );
-        const timeoutId = setTimeout(
-          (procedure: string, cid: number) => {
-            reject(
-              new Error(
-                `Call timeout, procedure: ${procedure}, call id: ${cid}`
-              )
-            );
-          },
-          this.config.responseTimeout,
-          procedurePath,
-          callId
-        );
-
-        this.socket.messages.waitCallResponse(callId, (err, output) => {
-          clearTimeout(timeoutId);
-
-          if (err) {
-            reject(err);
-          } else {
-            resolve(output);
-          }
-        });
-      });
+    return (input) => {
+      return this.socket.messages.callRemoteProcedure(procedurePath, input);
     };
   }
 }

@@ -2,14 +2,14 @@ import { Buffer } from 'buffer';
 
 export enum SocketMessageType {
   Call = 0,
-  CallReponse = 1,
-  CallReponseError = 2,
+  Callback = 1,
+  CallbackError = 2,
 }
 
 const MessageTypeBuffers: Record<SocketMessageType, Uint8Array> = {
   [SocketMessageType.Call]: new Uint8Array([0]),
-  [SocketMessageType.CallReponse]: new Uint8Array([1]),
-  [SocketMessageType.CallReponseError]: new Uint8Array([2]),
+  [SocketMessageType.Callback]: new Uint8Array([1]),
+  [SocketMessageType.CallbackError]: new Uint8Array([2]),
 };
 
 export enum PingPongMessage {

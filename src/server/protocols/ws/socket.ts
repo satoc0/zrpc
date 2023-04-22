@@ -13,8 +13,11 @@ import { ZRPC } from '../../../zrpc';
 import { SocketProcedureCaller } from './client-caller-builder';
 import { ClientCoordinator } from './client-coordinator';
 import { WSContext } from './context';
-import { WebSocketServerConfig } from './server';
-import { ReponseCallbackKey, ProcedureResponseWait } from './types';
+import {
+  ReponseCallbackKey,
+  ProcedureWaitingCallback,
+  WebSocketServerConfig,
+} from './types';
 
 export class SocketHandler<ZAPI extends ZRPC> {
   public isAlive = true;
@@ -26,11 +29,21 @@ export class SocketHandler<ZAPI extends ZRPC> {
   ) {
     ws.binaryType = 'arraybuffer';
 
-    this.coordinator.caller.socketProcedureCaller = this.procedureCaller;
+    this.coordinator.caller.socketProcedureCaller = this.callRemoteProcedure;
     this.registryListeners();
   }
 
-  private procedureCaller: SocketProcedureCaller = (
+  private registryListeners() {
+    this.ws.addEventListener('message', this.socketMessageHandler);
+    this.ws.on('pong', this.onPong);
+  }
+
+  private unregistryListners() {
+    this.ws.removeEventListener('message', this.socketMessageHandler);
+    this.ws.off('pong', this.onPong);
+  }
+
+  private callRemoteProcedure: SocketProcedureCaller = (
     procedureName: string,
     input: any
   ) => {
@@ -80,16 +93,6 @@ export class SocketHandler<ZAPI extends ZRPC> {
     }
   }
 
-  private registryListeners() {
-    this.ws.addEventListener('message', this.socketMessageHandler);
-    this.ws.on('pong', this.onPong);
-  }
-
-  private unregistryListners() {
-    this.ws.removeEventListener('message', this.socketMessageHandler);
-    this.ws.off('pong', this.onPong);
-  }
-
   public destroy() {
     this.unregistryListners();
   }
@@ -115,11 +118,11 @@ export class SocketHandler<ZAPI extends ZRPC> {
       case SocketMessageType.Call:
         this.callProcedureHandler(message);
         break;
-      case SocketMessageType.CallReponse:
-        this.callProcedureResponse(message);
+      case SocketMessageType.Callback:
+        this.executeProcedureCallback(message);
         break;
-      case SocketMessageType.CallReponseError:
-        this.callProcedureResponseError(message);
+      case SocketMessageType.CallbackError:
+        this.executeProcedureCallbackError(message);
         break;
     }
   }
@@ -145,12 +148,12 @@ export class SocketHandler<ZAPI extends ZRPC> {
 
       const outputEncoded = dataParser.output.encode(output);
 
-      this.sendCallResponse(procedureMessage, outputEncoded);
+      this.sendCallback(procedureMessage, outputEncoded);
     } catch (e) {
-      procedureMessage.messageType = SocketMessageType.CallReponseError;
+      procedureMessage.messageType = SocketMessageType.CallbackError;
 
       if (e instanceof ZError) {
-        this.sendCallResponse(procedureMessage, e.getResponseBuffer());
+        this.sendCallback(procedureMessage, e.getResponseBuffer());
       } else if (e instanceof Error) {
         const error = new ZError({
           errorCode: '',
@@ -158,14 +161,14 @@ export class SocketHandler<ZAPI extends ZRPC> {
           procedureName: procedureMessage.procedureName,
         });
 
-        this.sendCallResponse(procedureMessage, error.getResponseBuffer());
+        this.sendCallback(procedureMessage, error.getResponseBuffer());
       }
       // TODO emitt error
     }
   }
 
-  callProcedureResponse(procedureMessage: SocketMessage) {
-    const awaiter = this.getReponseWaiter(procedureMessage);
+  executeProcedureCallback(procedureMessage: SocketMessage) {
+    const awaiter = this.getReponseCallback(procedureMessage);
 
     try {
       const dataParsers = this.coordinator.api.proceduresDataParsers.get(
@@ -178,39 +181,38 @@ export class SocketHandler<ZAPI extends ZRPC> {
     } catch (err) {
       awaiter.reject(err as Error);
     } finally {
-      this.deleteReponseWaiter(procedureMessage);
+      this.deleteProcedureCallback(procedureMessage);
     }
   }
 
-  private getReponseWaiter(
+  private getReponseCallback(
     procedureMessage: SocketMessage
-  ): ProcedureResponseWait {
-    const callResponseWaiterKey = this.getResponseCallbackKey(
+  ): ProcedureWaitingCallback {
+    const responseCallbackKey = this.getResponseCallbackKey(
       procedureMessage.callId
     );
-    const awaiter = this.coordinator.responseCallbacksMap.get(
-      callResponseWaiterKey
-    );
+    const callback =
+      this.coordinator.responseCallbacksMap.get(responseCallbackKey);
 
-    if (!awaiter) {
+    if (!callback) {
       throw new Error(
         `Call response handler not found, procedure: ${procedureMessage.procedureName}, call id: ${procedureMessage.callId}`
       );
     }
 
-    return awaiter;
+    return callback;
   }
 
-  private deleteReponseWaiter(procedureMessage: SocketMessage) {
+  private deleteProcedureCallback(procedureMessage: SocketMessage) {
     const callResponseWaiterKey = this.getResponseCallbackKey(
       procedureMessage.callId
     );
     this.coordinator.responseCallbacksMap.delete(callResponseWaiterKey);
   }
 
-  callProcedureResponseError(procedureMessage: SocketMessage) {
-    const awaiter = this.getReponseWaiter(procedureMessage);
-    awaiter.reject(ZError.factoryFromBuffer(procedureMessage.dataBuffer));
+  executeProcedureCallbackError(procedureMessage: SocketMessage) {
+    const callback = this.getReponseCallback(procedureMessage);
+    callback.reject(ZError.factoryFromBuffer(procedureMessage.dataBuffer));
   }
 
   private sendPong() {
@@ -219,6 +221,7 @@ export class SocketHandler<ZAPI extends ZRPC> {
 
   private onPong = () => {
     this.isAlive = true;
+    this.sendQueuedPackets();
   };
 
   ping() {
@@ -228,7 +231,7 @@ export class SocketHandler<ZAPI extends ZRPC> {
     this.ws.ping();
   }
 
-  sendCallResponse(originalMessage: SocketMessage, result: Uint8Array) {
+  sendCallback(originalMessage: SocketMessage, result: Uint8Array) {
     return this.sendMessage({
       ...originalMessage,
       dataBuffer: result,
