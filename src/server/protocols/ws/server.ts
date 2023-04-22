@@ -6,7 +6,9 @@ import { WsClient } from './client';
 import { ClientCoordinator } from './client-coordinator';
 import { ResponseCallbacksMap, WebSocketServerConfig } from './types';
 
-type OnConnectionHandler<ZAPI extends ZRPC> = (client: WsClient<ZAPI>) => void;
+type ClientTopEventHandler<ZAPI extends ZRPC> = (
+  client: WsClient<ZAPI>
+) => void;
 
 export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
   protected builder: undefined;
@@ -19,15 +21,19 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
 
   public pingPongIntervalIntervalId!: NodeJS.Timer;
 
-  public rejectCallTimeoutsIntervalId!: NodeJS.Timer;
+  public rejectCallbacksTimeoutIntervalId!: NodeJS.Timer;
 
-  private onConnectionHandler!: OnConnectionHandler<ZAPI>;
+  public onConnection?: ClientTopEventHandler<ZAPI>;
 
-  private responseCallbacksMap: ResponseCallbacksMap = new Map();
+  public onReconnection?: ClientTopEventHandler<ZAPI>;
+
+  public onError?: ClientTopEventHandler<ZAPI>;
+
+  private proceduresCallbacksMap: ResponseCallbacksMap = new Map();
 
   constructor(
-    protected api: ZAPI,
-    protected config: WebSocketServerConfig = {}
+    public readonly api: ZAPI,
+    public readonly config: WebSocketServerConfig = {}
   ) {
     super();
 
@@ -53,8 +59,6 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
       this.wss.handleUpgrade(req, socket, head, (wsSocket) => {
         clientCoordinator.setSocket(wsSocket);
 
-        this.onConnectionHandler?.(clientCoordinator.getClient());
-
         this.wss.emit('connection', wsSocket, req);
       });
     });
@@ -74,12 +78,7 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
       return client;
     }
 
-    return new ClientCoordinator(
-      this.api,
-      clientId,
-      this.config,
-      this.responseCallbacksMap
-    );
+    return new ClientCoordinator(clientId, this, this.proceduresCallbacksMap);
   }
 
   protected async runMiddlewares(req: IncomingMessage) {
@@ -103,17 +102,17 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
   }
 
   private initRejectCallsTimeouts() {
-    this.rejectCallTimeoutsIntervalId = setInterval(
-      (responseWaiters) => {
+    this.rejectCallbacksTimeoutIntervalId = setInterval(
+      (callbacks) => {
         const now = Date.now();
-        for (const [, waiter] of responseWaiters) {
-          if (waiter.expireAt < now) {
-            waiter.reject(new Error('Response timeout'));
+        for (const [, callback] of callbacks) {
+          if (callback.expireAt < now) {
+            callback.reject(new Error('Response timeout'));
           }
         }
       },
       5000,
-      this.responseCallbacksMap
+      this.proceduresCallbacksMap
     );
   }
 
@@ -122,10 +121,6 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
   }
 
   private stopRejectCallsTimeouts() {
-    clearInterval(this.rejectCallTimeoutsIntervalId);
-  }
-
-  onConnection(handler: OnConnectionHandler<ZAPI>) {
-    this.onConnectionHandler = handler;
+    clearInterval(this.rejectCallbacksTimeoutIntervalId);
   }
 }

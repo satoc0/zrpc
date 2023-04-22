@@ -3,8 +3,9 @@ import { ZRPC } from '../../../zrpc';
 import { WsClient } from './client';
 import { WSServerClientCallerBuilder } from './client-caller-builder';
 import { WSServerClientHandlerBuilder } from './client-handler-builder';
+import { ZWSServer } from './server';
 import { SocketHandler } from './socket';
-import { ResponseCallbacksMap, WebSocketServerConfig } from './types';
+import { ResponseCallbacksMap } from './types';
 
 const MAX_CALL_ID = 255;
 
@@ -26,13 +27,12 @@ export class ClientCoordinator<ZAPI extends ZRPC> {
   public messagesQueue: Set<Uint8Array> = new Set();
 
   constructor(
-    public api: ZAPI,
-    public clientId: string,
-    public config: WebSocketServerConfig,
-    public responseCallbacksMap: ResponseCallbacksMap
+    public readonly clientId: string,
+    public server: ZWSServer<ZAPI>,
+    public proceduresCallbacksMap: ResponseCallbacksMap
   ) {
-    this.caller = new WSServerClientCallerBuilder(api);
-    this.handler = new WSServerClientHandlerBuilder(api);
+    this.caller = new WSServerClientCallerBuilder(this.server.api);
+    this.handler = new WSServerClientHandlerBuilder(this.server.api);
     this.client = new WsClient(clientId, this.caller, this.handler);
   }
 
@@ -46,6 +46,9 @@ export class ClientCoordinator<ZAPI extends ZRPC> {
 
     if (isReconnection) {
       this.handleReconnection();
+      this.server.onReconnection?.(this.client);
+    } else {
+      this.server.onConnection?.(this.client);
     }
   }
 

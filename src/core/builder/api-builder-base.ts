@@ -20,11 +20,10 @@ export abstract class ApiBuilderBase<
   public readonly methods: BuilderMap = {} as BuilderMap;
 
   constructor(protected api: ZRPC) {
-    this.makeBuilder(this.methods, api.apiDefinition.procedures);
+    this.makeBuilder(api.apiDefinition.procedures);
   }
 
   protected makeBuilder(
-    builderMapTarget: ApiBuilderMapAbstraction,
     map: ApiProceduresMap,
     procedurePathArr: string[] = []
   ) {
@@ -40,15 +39,12 @@ export abstract class ApiBuilderBase<
           '/'
         );
 
-        builderMapTarget[procedureName] = this.methodFactory(procedurePath);
+        (this.methods as ApiBuilderMapAbstraction)[procedureName] =
+          this.methodFactory(procedurePath);
       } else {
-        builderMapTarget[procedureName] = {};
+        (this.methods as ApiBuilderMapAbstraction)[procedureName] = {};
 
-        this.makeBuilder(
-          builderMapTarget[procedureName] as any,
-          procedure,
-          procedurePathArr
-        );
+        this.makeBuilder(this.methods[procedureName] as any, procedurePathArr);
 
         procedurePathArr.pop();
       }

@@ -59,8 +59,8 @@ function uint8Buffer(num: number): Uint8Array {
  * ```
  */
 export class SocketMessageParser {
-  static encode(packet: SocketMessage): Uint8Array {
-    const { messageType, procedureName, dataBuffer } = packet;
+  static encode(message: SocketMessage): Uint8Array {
+    const { messageType, procedureName, dataBuffer } = message;
     const typeByte = MessageTypeBuffers[messageType];
 
     const procedureNameBuffer = Buffer.from(procedureName);
@@ -72,31 +72,32 @@ export class SocketMessageParser {
       );
     }
 
-    const callIdByte = uint8Buffer(packet.callId);
+    const callIdByte = uint8Buffer(message.callId);
     const procedureBytesLengthByte = uint8Buffer(procedureNameByteLength);
 
     return Buffer.concat([
       typeByte,
       callIdByte,
       procedureBytesLengthByte,
+      procedureNameBuffer,
       dataBuffer,
     ]);
   }
 
   static decode(buffer: Uint8Array): SocketMessage {
-    const messageType = buffer[0];
-    const callId = buffer[1];
-    const procedureNameLength = buffer[2];
+    const messageType = buffer.at(0) as number;
+    const callId = buffer.at(1) as number;
+    const procedureNameLength = buffer.at(2) as number;
 
     const procedureNameBuffer = buffer.subarray(
       PACKET_METADATA_BYTES_LENGTH,
-      procedureNameLength
+      PACKET_METADATA_BYTES_LENGTH + procedureNameLength
     );
     const procedureName = procedureNameBuffer.toString();
 
     const dataBuffer = buffer.subarray(
-      0,
-      procedureNameLength + PACKET_METADATA_BYTES_LENGTH
+      procedureNameLength + PACKET_METADATA_BYTES_LENGTH,
+      buffer.byteLength
     );
 
     return {
