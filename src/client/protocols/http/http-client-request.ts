@@ -23,7 +23,7 @@ export class HttpClientRequest {
     const headers: HeadersInit = this.buildRequestHeaders(requestBase);
 
     const response = await (this.config.fetchClient as FetchClient)(
-      this.config.url + this.procedureData.procedurePathName,
+      (this.config.url || '/') + this.procedureData.procedurePathName,
       {
         ...requestBase,
         headers,
