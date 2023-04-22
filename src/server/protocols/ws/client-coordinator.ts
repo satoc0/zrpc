@@ -6,6 +6,7 @@ import { WSServerClientHandlerBuilder } from './client-handler-builder';
 import { ZWSServer } from './server';
 import { SocketHandler } from './socket';
 import { ResponseCallbacksMap } from './types';
+import { separateCallbackKey } from './utils';
 
 const MAX_CALL_ID = 255;
 
@@ -80,5 +81,22 @@ export class ClientCoordinator<ZAPI extends ZRPC> {
 
   enqueueMessage(buffer: Uint8Array) {
     this.messagesQueue.add(buffer);
+  }
+
+  public destroy() {
+    this.socket.destroy();
+    this.removeCallbacksRegistry();
+  }
+
+  private removeCallbacksRegistry() {
+    for (const [callbackKey, callback] of this.proceduresCallbacksMap) {
+      const [clientId] = separateCallbackKey(callbackKey);
+
+      if (clientId === this.clientId) {
+        callback.resolve.deref();
+        callback.reject.deref()?.(new Error('Client destroyed'));
+        this.proceduresCallbacksMap.delete(callbackKey);
+      }
+    }
   }
 }

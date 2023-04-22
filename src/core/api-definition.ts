@@ -1,9 +1,7 @@
 import { SchemaBase } from './schemas';
 import { ProtobufTypesWithOptional } from './schema-types';
 
-export interface ApiConfig<
-  Procedures extends ApiProceduresMap = ApiProceduresMap
-> {
+export interface ApiConfig<Procedures extends ProceduresTree = ProceduresTree> {
   /**
    * Define your schemas
    */
@@ -12,7 +10,7 @@ export interface ApiConfig<
 
 export type SchemaDef = typeof SchemaBase | SchemaDefinition;
 
-export interface ApiProceduresSchemas {
+export interface ProceduresSchemas {
   input: SchemaDefinition | typeof SchemaBase;
   output: SchemaDefinition | typeof SchemaBase;
 }
@@ -23,6 +21,6 @@ export type SchemaDefinition = {
   [keyName in string]: SchemaTypes;
 };
 
-export type ApiProceduresMap = {
-  [commandName: string]: ApiProceduresSchemas | ApiProceduresMap;
+export type ProceduresTree = {
+  [commandName: string]: ProceduresSchemas | ProceduresTree;
 };

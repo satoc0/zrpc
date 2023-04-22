@@ -1,6 +1,6 @@
 import {
   SocketMessage,
-  SocketMessageParser,
+  SocketMessageSerializer,
   SocketMessageType,
 } from '../../../src/core/protocols/socket-messages';
 
@@ -27,12 +27,12 @@ describe('socket-messages', () => {
       procedureNameStringByteLength +
       message.dataBuffer.byteLength;
 
-    const messageBuffer = SocketMessageParser.encode(message);
+    const messageBuffer = SocketMessageSerializer.encode(message);
 
     expect(messageBuffer).toBeInstanceOf(Buffer);
     expect(messageBuffer.byteLength).toBe(totalByteLengthExpected);
 
-    const messageDecoded = SocketMessageParser.decode(messageBuffer);
+    const messageDecoded = SocketMessageSerializer.decode(messageBuffer);
 
     expect(Buffer.from(messageDecoded.dataBuffer).toString()).toBe(
       bufferStringData

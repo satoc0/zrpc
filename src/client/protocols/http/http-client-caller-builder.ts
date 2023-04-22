@@ -1,6 +1,6 @@
 import {
-  ApiProceduresMap,
-  ApiProceduresSchemas,
+  ProceduresTree,
+  ProceduresSchemas,
 } from '../../../core/api-definition';
 import {
   ApiBuilderBase,
@@ -12,20 +12,19 @@ import { ZRPC } from '../../../zrpc';
 import { HttpClientRequest } from './http-client-request';
 import { ClientHttpConfig } from './http-client-types';
 
-export type ApiBuilderMap<Root extends ApiProceduresMap = ApiProceduresMap> = {
-  [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
+export type ApiBuilderMap<Root extends ProceduresTree = ProceduresTree> = {
+  [Key in keyof Root]: Root[Key] extends ProceduresSchemas
     ? (
         input: SchemaToType<Root[Key]['input']>
       ) => Promise<SchemaToType<Root[Key]['output']>>
-    : Root[Key] extends ApiProceduresMap
+    : Root[Key] extends ProceduresTree
     ? ApiBuilderMap<Root[Key]>
     : never;
 };
 
-export class HttpClientCallerBuilder<
-  ZAPI extends ZRPC,
-  Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
-> extends ApiBuilderBase<ApiBuilderMap<Procedures>> {
+export class HttpClientCallerBuilder<ZAPI extends ZRPC> extends ApiBuilderBase<
+  ApiBuilderMap<ZAPI['definition']['procedures']>
+> {
   constructor(protected api: ZAPI, private config: ClientHttpConfig) {
     super(api);
   }
@@ -36,16 +35,17 @@ export class HttpClientCallerBuilder<
     return async (input) => {
       const procedureData = this.api.proceduresDataParsers.get(procedurePath);
 
-      const clientRequest = new HttpClientRequest(procedureData, input);
+      const clientRequest = new HttpClientRequest(
+        this.config,
+        procedureData,
+        input
+      );
 
       const requestBase: RequestInit = this.config?.requestBuilder
         ? await this.config.requestBuilder()
         : {};
 
-      const response = await clientRequest.fetch(
-        this.config.url as string,
-        requestBase
-      );
+      const response = await clientRequest.fetch(requestBase);
 
       if (ZError.is(response)) {
         throw ZError.factory(response);

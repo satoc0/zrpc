@@ -4,7 +4,8 @@ import {
   PROTOBUF_CONTENT_TYPE,
 } from '../../../core/constants';
 import { ZError } from '../../../core/core-errors';
-import { ZProcedureDataParser } from '../../../core/procedures/procedure-data';
+import { ZProcedureDataSerializer } from '../../../core/procedures/procedure-data';
+import { ClientHttpConfig, FetchClient } from './http-client-types';
 
 export class HttpClientRequest {
   private static requiredHeaders: HeadersInit = {
@@ -13,15 +14,16 @@ export class HttpClientRequest {
   };
 
   constructor(
-    private procedureData: ZProcedureDataParser,
+    private config: ClientHttpConfig,
+    private procedureData: ZProcedureDataSerializer,
     private rawInput: object
   ) {}
 
-  async fetch(baseRrl: string, requestBase?: RequestInit): Promise<object> {
+  async fetch(requestBase?: RequestInit): Promise<object> {
     const headers: HeadersInit = this.buildRequestHeaders(requestBase);
 
-    const response = await fetch(
-      baseRrl + '/' + this.procedureData.procedurePathName,
+    const response = await (this.config.fetchClient as FetchClient)(
+      this.config.url + this.procedureData.procedurePathName,
       {
         ...requestBase,
         headers,
@@ -71,6 +73,7 @@ export class HttpClientRequest {
 
   private async decodeProtoResponse(response: Response): Promise<object> {
     const arrBuffer = await response.arrayBuffer();
+
     const outputBuffer = Buffer.from(arrBuffer);
 
     if (response.status === HTTP_ERROR_STATUS_CODE) {

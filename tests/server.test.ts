@@ -3,7 +3,6 @@ import { AddressInfo, Socket } from 'node:net';
 import ZRPC, { ZHttpClient, ZHttpServer } from '../src';
 import { PROTOBUF_CONTENT_TYPE } from '../src/core/constants';
 import { ProcedureNotFound, ZError } from '../src/core/core-errors';
-import { BodyReadError } from '../src/server/server-errors';
 
 function randomIntFromInterval(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -49,7 +48,7 @@ beforeEach(async () => {
   const serverPort = addr.port;
 
   client = new ZHttpClient(api, {
-    url: `http://localhost:${serverPort}`,
+    url: `http://localhost:${serverPort}/`,
     requestBuilder: () => {
       return {
         headers: [['Connection', 'close']],
@@ -95,7 +94,7 @@ it('should treat error in procedure handle', async () => {
   await client.call.BasicAddJSON({ left, right }).catch((e) => {
     expect(e).toBeInstanceOf(ZError);
     expect(e.message).toBe('Error: ' + errorMessage);
-    expect(e.errorCode).toBe('procedure-handler');
+    expect(e.errorCode).toBe('procedure-execution');
     expect(e.procedureName).toBe('BasicAddJSON');
   });
 });
@@ -120,7 +119,7 @@ it('should throw not found procedure handler', async () => {
 
   httpServer.emit('request', mockReq, serverResponse);
 
-  await new Promise((r) => setTimeout(r, 100));
+  await new Promise((r) => queueMicrotask(r as any));
 
   expect(resSetHeader.mock.calls).toHaveLength(1);
   expect(resSetHeader.mock.calls[0][0]).toBe('Content-Type');

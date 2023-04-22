@@ -1,5 +1,5 @@
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
-import { ApiProceduresMap } from '../../../core';
+import { ProceduresTree } from '../../../core';
 import {
   HTTP_ERROR_STATUS_CODE,
   HTTP_SUCCESS_STATUS_CODE,
@@ -8,14 +8,14 @@ import {
 import { ZError } from '../../../core/core-errors';
 import { ZServerProtocolBase } from '../../../core/protocols/server-protocol-base';
 import { ZRPC } from '../../../zrpc';
-import { BodyReadError } from '../../server-errors';
 import { HttpServerApiBuilder } from './api-builder';
 import { HttpContext } from './context';
 import { HttpServerConfig } from './types';
+import { BodyReadError } from './errors';
 
 export class ZHttpServer<
   ZAPI extends ZRPC,
-  Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
+  Procedures extends ProceduresTree = ZAPI['definition']['procedures']
 > extends ZServerProtocolBase {
   protected builder!: HttpServerApiBuilder<ZAPI, Procedures>;
 

@@ -4,11 +4,11 @@ import {
   PONG_BUFFER,
   PingPongMessage,
   SocketMessage,
-  SocketMessageParser,
+  SocketMessageSerializer,
   isPingOrPongBufferMessage,
 } from '../../../../core/protocols/socket-messages';
 import { ZRPC } from '../../../../zrpc';
-import { ClientWSConfig } from '../client-types';
+import { ClientWSConfig } from '../ws-client-types';
 
 export type SocketEventMessage = MessageEvent<ArrayBuffer>;
 
@@ -219,7 +219,7 @@ export class SocketConnection {
   }
 
   sendPacket(packet: SocketMessage) {
-    const packetBuffer = SocketMessageParser.encode(packet);
+    const packetBuffer = SocketMessageSerializer.encode(packet);
     this.sendOrQueue(packetBuffer);
   }
 

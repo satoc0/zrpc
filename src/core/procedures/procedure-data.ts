@@ -1,7 +1,7 @@
 import { Type } from 'protobufjs';
 import {
-  ApiProceduresMap,
-  ApiProceduresSchemas,
+  ProceduresTree,
+  ProceduresSchemas,
   SchemaDef,
   SchemaDefinition,
 } from '../api-definition';
@@ -42,7 +42,7 @@ export function decodeByClassSchema<O extends object>(
   return decodedData as O;
 }
 
-abstract class ZProcedureDataParserSchema {
+abstract class ZProcedureSchemaSerializer {
   protected readonly procedureName!: string;
 
   protected readonly schemaName!: string;
@@ -68,7 +68,7 @@ abstract class ZProcedureDataParserSchema {
   abstract decode(buffer: Uint8Array): object;
 }
 
-export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSchema {
+export class ZProcedureJSONSchemaSerializer extends ZProcedureSchemaSerializer {
   private schema!: Type;
 
   constructor(
@@ -108,7 +108,7 @@ export class ZProcedureDataSchemaDefinitionParser extends ZProcedureDataParserSc
   }
 }
 
-export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
+export class ZProcedureClassSchemaSerializer extends ZProcedureSchemaSerializer {
   constructor(
     protected procedurePathName: string,
     protected side: ProcedureDataSide,
@@ -138,17 +138,17 @@ export class ZProcedureDataSchemaParser extends ZProcedureDataParserSchema {
 }
 
 /**
- * This class has the responsability to create procedure data parsers
+ * This class has the responsability to create procedure data serializers
  * encoders and decoders
  */
-export class ZProcedureDataParser {
-  public readonly input!: ZProcedureDataParserSchema;
+export class ZProcedureDataSerializer {
+  public readonly input!: ZProcedureSchemaSerializer;
 
-  public readonly output!: ZProcedureDataParserSchema;
+  public readonly output!: ZProcedureSchemaSerializer;
 
   constructor(
     public readonly procedurePathName: string,
-    schemas: ApiProceduresSchemas
+    schemas: ProceduresSchemas
   ) {
     this.input = this.createSchemaParserInstance(
       ProcedureDataSide.Input,
@@ -166,15 +166,15 @@ export class ZProcedureDataParser {
     side: ProcedureDataSide,
     name: string,
     schema: SchemaDef
-  ): ZProcedureDataParserSchema {
+  ): ZProcedureSchemaSerializer {
     return schema.constructor.name === 'Object'
-      ? new ZProcedureDataSchemaDefinitionParser(
+      ? new ZProcedureJSONSchemaSerializer(
           this.procedurePathName,
           side,
           name,
           schema as SchemaDefinition
         )
-      : new ZProcedureDataSchemaParser(
+      : new ZProcedureClassSchemaSerializer(
           this.procedurePathName,
           side,
           name,
@@ -184,22 +184,25 @@ export class ZProcedureDataParser {
 }
 
 export function isProcedureSchema(
-  target: ApiProceduresMap | ApiProceduresSchemas
-): target is ApiProceduresSchemas {
+  target: ProceduresTree | ProceduresSchemas
+): target is ProceduresSchemas {
   const keys: string[] = Object.keys(target).sort();
   const [input, output] = keys;
 
   return keys.length === 2 && input === 'input' && output === 'output';
 }
 
-export class ZProceduresDataParsers {
-  private map: Map<string, ZProcedureDataParser> = new Map();
+/**
+ * This class holds the serializations of all procedures.
+ */
+export class ZProceduresSerialization {
+  private map: Map<string, ZProcedureDataSerializer> = new Map();
 
-  constructor(proceduresMap: ApiProceduresMap) {
+  constructor(proceduresMap: ProceduresTree) {
     this.buildMap(proceduresMap);
   }
 
-  private buildMap(map: ApiProceduresMap, procedurePathArr: string[] = []) {
+  private buildMap(map: ProceduresTree, procedurePathArr: string[] = []) {
     for (const procedureName in map) {
       const procedure = map[procedureName];
 
@@ -214,7 +217,7 @@ export class ZProceduresDataParsers {
 
         this.map.set(
           procedurePath,
-          new ZProcedureDataParser(procedurePath, procedure)
+          new ZProcedureDataSerializer(procedurePath, procedure)
         );
       } else {
         this.buildMap(procedure, procedurePathArr);
@@ -224,7 +227,7 @@ export class ZProceduresDataParsers {
     }
   }
 
-  public get(name: string): ZProcedureDataParser {
+  public get(name: string): ZProcedureDataSerializer {
     const item = this.map.get(name);
 
     if (!item) {

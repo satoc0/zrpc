@@ -5,14 +5,14 @@ import {
   SchemaBase,
 } from '../../../src/core';
 import { ParserDataError } from '../../../src/core/core-errors';
-import { ZProceduresDataParsers } from '../../../src/core/procedures/procedure-data';
+import { ZProceduresSerialization } from '../../../src/core/procedures/procedure-data';
 
 const inputString = 'teste';
 const outputString = inputString + '_res';
 
 interface MetadataDescriptor {
   procedureName: string;
-  dataParsers: ZProceduresDataParsers;
+  dataParsers: ZProceduresSerialization;
 }
 
 function createTest(
@@ -123,7 +123,7 @@ function createTest(
 
 createTest('procedure data parsers with json', () => ({
   procedureName: 'jsonDefinitionTest',
-  dataParsers: new ZProceduresDataParsers({
+  dataParsers: new ZProceduresSerialization({
     jsonDefinitionTest: {
       input: {
         str: 'string',
@@ -149,7 +149,7 @@ export class DecoratorOutput extends SchemaBase<DecoratorOutput> {
 
 createTest('procedure data parsers with class decorators', () => ({
   procedureName: 'decoratorsDefinitionTest',
-  dataParsers: new ZProceduresDataParsers({
+  dataParsers: new ZProceduresSerialization({
     decoratorsDefinitionTest: {
       input: DecoratorInput,
       output: DecoratorOutput,

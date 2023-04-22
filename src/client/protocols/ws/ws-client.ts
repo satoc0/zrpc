@@ -1,25 +1,26 @@
-import { ApiProceduresMap } from '../../../core';
-import { ZClientBidirectionalProtocolBase } from '../../../core/protocols/client-protocol-base';
+import {
+  BaseURL,
+  ZClientBidirectionalProtocolBase,
+} from '../../../core/protocols/client-protocol-base';
 import { ZRPC } from '../../../zrpc';
 import { ZSocket } from './socket/socket';
-import { WsClientCallerBuilder } from './client-caller-builder';
-import { WsClientHandlerBuilder } from './client-handler-builder';
-import { ClientWSConfig } from './client-types';
+import { WsClientCallerBuilder } from './ws-client-caller-builder';
+import { WsClientHandlerBuilder } from './ws-client-handler-builder';
+import { ClientWSConfig } from './ws-client-types';
 
 export class ZWSClient<
-  ZAPI extends ZRPC,
-  Procedures extends ApiProceduresMap = ZAPI['apiDefinition']['procedures']
+  ZAPI extends ZRPC
 > extends ZClientBidirectionalProtocolBase<ZAPI, ClientWSConfig> {
-  protected caller: WsClientCallerBuilder<ZAPI, Procedures>;
+  protected caller: WsClientCallerBuilder<ZAPI>;
 
-  protected handler: WsClientHandlerBuilder<ZAPI, Procedures>;
+  protected handler: WsClientHandlerBuilder<ZAPI>;
 
   public readonly socket!: ZSocket;
 
   constructor(protected def: ZAPI, protected config: ClientWSConfig = {}) {
     super();
 
-    this.config.url ||= window.location.origin;
+    this.config.url ||= (window.location.origin + '/') as BaseURL;
     this.config.responseTimeout ||= 30000;
 
     this.socket = new ZSocket(def, this.config);

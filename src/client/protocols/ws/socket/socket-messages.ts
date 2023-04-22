@@ -1,11 +1,11 @@
 import { AcceptPromise } from '../../../../core';
 import {
   SocketMessage,
-  SocketMessageParser,
+  SocketMessageSerializer,
   SocketMessageType,
 } from '../../../../core/protocols/socket-messages';
 import { ZRPC } from '../../../../zrpc';
-import { ClientWSConfig } from '../client-types';
+import { ClientWSConfig } from '../ws-client-types';
 import { SocketConnection, SocketEventMessage } from './socket-connection';
 
 export type SubscriptionHandler = (input: object) => AcceptPromise<object>;
@@ -40,7 +40,7 @@ export class SocketMessages {
 
   private handleMessage(message: SocketEventMessage) {
     const buffer = Buffer.from(message.data);
-    const packet = SocketMessageParser.decode(buffer);
+    const packet = SocketMessageSerializer.decode(buffer);
 
     if (packet.messageType === SocketMessageType.Call) {
       this.callHandler(packet);

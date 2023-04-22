@@ -11,14 +11,14 @@ export type WebSocketServerConfig = ServerConfig<
 
 export interface ProcedureWaitingCallback {
   expireAt: number;
-  resolve: (input: object) => void;
-  reject: (error: Error) => void;
+  resolve: WeakRef<(input: object) => void>;
+  reject: WeakRef<(error: Error) => void>;
 }
 
 export type ClientId = string;
 export type CallId = number;
 
-export type ReponseCallbackKey = `${ClientId}${CallId}`;
+export type ReponseCallbackKey = `${ClientId}__${CallId}`;
 
 export type ResponseCallbacksMap = Map<
   ReponseCallbackKey,

@@ -58,7 +58,7 @@ function uint8Buffer(num: number): Uint8Array {
  * [typeByte, callId, procedureNameLengthByte, ...procedureNameBytes, ...dataBytes]
  * ```
  */
-export class SocketMessageParser {
+export class SocketMessageSerializer {
   static encode(message: SocketMessage): Uint8Array {
     const { messageType, procedureName, dataBuffer } = message;
     const typeByte = MessageTypeBuffers[messageType];

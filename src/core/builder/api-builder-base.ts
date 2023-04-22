@@ -1,13 +1,13 @@
 import { ZRPC } from '../../zrpc';
-import { ApiProceduresMap, ApiProceduresSchemas } from '../api-definition';
+import { ProceduresTree, ProceduresSchemas } from '../api-definition';
 import { isProcedureSchema } from '../procedures/procedure-data';
 
 export type ApiBuilderMapAbstraction<
-  Root extends ApiProceduresMap = ApiProceduresMap
+  Root extends ProceduresTree = ProceduresTree
 > = {
-  [Key in keyof Root]: Root[Key] extends ApiProceduresSchemas
+  [Key in keyof Root]: Root[Key] extends ProceduresSchemas
     ? unknown
-    : Root[Key] extends ApiProceduresMap
+    : Root[Key] extends ProceduresTree
     ? ApiBuilderMapAbstraction<Root[Key]>
     : object;
 };
@@ -20,13 +20,10 @@ export abstract class ApiBuilderBase<
   public readonly methods: BuilderMap = {} as BuilderMap;
 
   constructor(protected api: ZRPC) {
-    this.makeBuilder(api.apiDefinition.procedures);
+    this.makeBuilder(api.definition.procedures);
   }
 
-  protected makeBuilder(
-    map: ApiProceduresMap,
-    procedurePathArr: string[] = []
-  ) {
+  protected makeBuilder(map: ProceduresTree, procedurePathArr: string[] = []) {
     for (const procedureName in map) {
       const procedure = map[procedureName];
 

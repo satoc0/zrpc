@@ -1,11 +1,14 @@
 import { ZRPC } from '../../zrpc';
 import { ApiBuilderBase } from '../builder/api-builder-base';
 
+export type BaseURL = `${string}/`;
+
 export interface ClientConfig {
   /**
    * Defaults to window.location.origin
+   * should ends with `/`
    */
-  url?: string;
+  url?: BaseURL;
 }
 
 export abstract class ZClientProtocolBase<

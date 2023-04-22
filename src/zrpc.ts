@@ -1,15 +1,15 @@
-import { ApiConfig, ApiProceduresMap } from './core/api-definition';
-import { ZProceduresDataParsers } from './core/procedures/procedure-data';
+import { ApiConfig, ProceduresTree } from './core/api-definition';
+import { ZProceduresSerialization } from './core/procedures/procedure-data';
 
-export class ZRPC<ApiProcedures extends ApiProceduresMap = ApiProceduresMap> {
-  public readonly proceduresDataParsers!: ZProceduresDataParsers;
+export class ZRPC<ApiProcedures extends ProceduresTree = ProceduresTree> {
+  public readonly proceduresDataParsers!: ZProceduresSerialization;
 
   constructor(
-    public readonly apiDefinition: ApiConfig<ApiProcedures>,
-    public readonly procedures = apiDefinition.procedures
+    public readonly definition: ApiConfig<ApiProcedures>,
+    public readonly procedures = definition.procedures
   ) {
-    this.proceduresDataParsers = new ZProceduresDataParsers(
-      this.apiDefinition.procedures
+    this.proceduresDataParsers = new ZProceduresSerialization(
+      this.definition.procedures
     );
   }
 }

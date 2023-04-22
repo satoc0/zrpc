@@ -2,7 +2,7 @@ import {
   Context,
   ProcedureExecutor,
 } from '../../../src/core/procedures/procedure-executor';
-import { ProcedureHandlerError } from '../../../src/server/server-errors';
+import { ProcedureExecutionError } from '../../../src/server/server-errors';
 
 class TestContext<T extends object> extends Context<T> {}
 
@@ -29,7 +29,7 @@ describe('procedure-executor', () => {
 
     const input = { num: 2 };
     const errorMessage = 'errorMessage';
-    const expectedError = new ProcedureHandlerError(
+    const expectedError = new ProcedureExecutionError(
       procedureName,
       'Error',
       errorMessage
@@ -44,7 +44,7 @@ describe('procedure-executor', () => {
     >(procedureName, handlerMock);
     const context = new TestContext(input);
     procedureExecutor.run(context).catch((e) => {
-      expect(e).toBeInstanceOf(ProcedureHandlerError);
+      expect(e).toBeInstanceOf(ProcedureExecutionError);
       expect(e).toEqual(expectedError);
     });
   });

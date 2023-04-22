@@ -1,5 +1,5 @@
 import { AcceptPromise, SchemaDef, SchemaToType } from '..';
-import { ProcedureHandlerError } from '../../server/server-errors';
+import { ProcedureExecutionError } from '../../server/server-errors';
 
 export abstract class Context<Input extends object = object> {
   constructor(public readonly input: Input) {}
@@ -27,7 +27,7 @@ export class ProcedureExecutor<
       return output as Output;
     } catch (e) {
       const error = e as Error;
-      throw new ProcedureHandlerError(this.name, error.name, error.message);
+      throw new ProcedureExecutionError(this.name, error.name, error.message);
     }
   }
 }

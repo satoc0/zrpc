@@ -1,5 +1,5 @@
 import { ZRPC } from '../../../../zrpc';
-import { ClientWSConfig } from '../client-types';
+import { ClientWSConfig } from '../ws-client-types';
 import { SocketConnection } from './socket-connection';
 import { SocketMessages } from './socket-messages';
 

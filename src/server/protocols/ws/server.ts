@@ -107,7 +107,7 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
         const now = Date.now();
         for (const [, callback] of callbacks) {
           if (callback.expireAt < now) {
-            callback.reject(new Error('Response timeout'));
+            callback.reject.deref()?.(new Error('Response timeout'));
           }
         }
       },
