@@ -13,13 +13,23 @@ export class ZHttpClient<ZAPI extends ZRPC> extends ZClientProtocolBase<
 > {
   protected caller: HttpClientCallerBuilder<ZAPI>;
 
-  constructor(protected def: ZAPI, protected config: ClientHttpConfig = {}) {
-    super();
+  protected config!: ClientHttpConfig;
 
-    this.config.url ||= (window.location.origin + '/') as BaseURL;
+  constructor(protected def: ZAPI, config: ClientHttpConfig = {}) {
+    super();
+    this.config = { ...config };
+    this.config.url ||= this.getBaseUrl();
     this.config.fetchClient ||= getFetchClient();
 
     this.caller = new HttpClientCallerBuilder(this.def, this.config);
+  }
+
+  private getBaseUrl(): BaseURL {
+    if (typeof window === 'undefined') {
+      return '/';
+    }
+
+    return (window.location.origin + '/') as BaseURL;
   }
 
   get call() {
@@ -28,5 +38,9 @@ export class ZHttpClient<ZAPI extends ZRPC> extends ZClientProtocolBase<
 
   updateConfig(config: Partial<ClientHttpConfig>) {
     this.config = { ...this.config, ...config };
+  }
+
+  getConfig(): ClientHttpConfig {
+    return this.config;
   }
 }

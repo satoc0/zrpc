@@ -1,8 +1,8 @@
 import { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { AddressInfo, Socket } from 'node:net';
-import ZRPC, { ZHttpClient, ZHttpServer } from '../src';
-import { PROTOBUF_CONTENT_TYPE } from '../src/core/constants';
-import { ProcedureNotFound, ZError } from '../src/core/core-errors';
+import ZRPC, { ZHttpClient, ZHttpServer } from '../../src';
+import { PROTOBUF_CONTENT_TYPE } from '../../src/core/constants';
+import { ProcedureNotFound, ZError } from '../../src/core/core-errors';
 
 function randomIntFromInterval(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1) + min);
