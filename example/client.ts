@@ -2,8 +2,10 @@ import { ZHttpClient, ZWSClient } from '../src';
 import { api } from './index';
 
 (async () => {
-  const httpClient = new ZHttpClient(api, { url: 'http://localhost:3000' });
-  const wsClient = new ZWSClient(api, { url: 'http://localhost:3000' });
+  const httpClient = new ZHttpClient(api, { url: 'http://localhost:3000/' });
+  const wsClient = new ZWSClient(api, { url: 'http://localhost:3000/' });
+
+  wsClient.onError = () => {};
 
   wsClient.handle.account.get(async (input) => {
     return { data: input.name };

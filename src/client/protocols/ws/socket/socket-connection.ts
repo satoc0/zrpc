@@ -8,13 +8,13 @@ import {
   isPingOrPongBufferMessage,
 } from '../../../../core/protocols/socket-messages';
 import { ZRPC } from '../../../../zrpc';
-import { ClientWSConfig } from '../ws-client-types';
+import { ClientWSConfig, OnErrorHandler } from '../ws-client-types';
 
 export type SocketEventMessage = MessageEvent<ArrayBuffer>;
 
 const LATENCY_ASSUMPTION_MS = 1000;
 
-enum LocalDisconnectionReasons {
+export enum LocalDisconnectionReasons {
   NetworkConnectionList = 'network-connection-lost',
   Destroyed = 'destroyed',
 }
@@ -34,11 +34,15 @@ export class SocketConnection {
 
   private pingTimeoutId!: NodeJS.Timeout;
 
+  private reconnectionTimeoutId!: NodeJS.Timeout;
+
   private currentReconnectionAttemps = 0;
+
+  onError!: OnErrorHandler;
 
   procedureMessageHandler!: (message: SocketEventMessage) => void;
 
-  constructor(protected api: ZRPC, protected config: ClientWSConfig) {
+  constructor(protected api: ZRPC, protected config: Required<ClientWSConfig>) {
     this.connect();
     this.addNetworkChangeEvents();
   }
@@ -68,6 +72,7 @@ export class SocketConnection {
   public destroy() {
     this.removeNetworkChangeEvents();
     this.cleanUpCurrentConnection();
+    clearTimeout(this.reconnectionTimeoutId);
     this.ws.close(undefined, LocalDisconnectionReasons.Destroyed);
   }
 
@@ -79,10 +84,10 @@ export class SocketConnection {
     const initializeErrorOrCloseEventHandler = (ev: Event | CloseEvent) => {
       const isCloseEvent = ev instanceof CloseEvent;
 
-      if (isCloseEvent && this.isNotExplicitCloseReason(ev.reason)) {
+      if (isCloseEvent) {
         this.handleCloseEvent(ev);
       } else {
-        console.error(ev);
+        this.onError?.(ev);
       }
 
       clearInitializeEvents();
@@ -126,28 +131,35 @@ export class SocketConnection {
     wsInstance.addEventListener('close', initializeErrorOrCloseEventHandler);
   }
 
+  private handleCloseEvent(ev: CloseEvent) {
+    if (this.isNotExplicitCloseReason(ev.reason)) {
+      this.tryReconnect();
+    }
+  }
+
   private connectionEstablished() {
     this.initPingPongGame();
     this.addMessageListenerForWSInstance(this.ws);
   }
 
   private tryReconnect() {
-    setTimeout(() => {
+    this.reconnectionTimeoutId = setTimeout(() => {
+      ++this.currentReconnectionAttemps;
+
       if (
-        this.currentReconnectionAttemps === this.config.reconnectionMaxAttemps
+        this.currentReconnectionAttemps >= this.config.reconnectionMaxAttemps
       ) {
-        console.error(new Error('Maximum reconnection attempts reached.'));
-        this.currentReconnectionAttemps = 0;
+        this.onError?.(new Error('Maximum reconnection attempts reached.'));
         return;
       }
 
       this.connect();
-      ++this.currentReconnectionAttemps;
     }, this.config.reconnectionTryInterval);
   }
 
   private getWebSocketInstance() {
-    const ws = new WebSocket(this.config.url as string);
+    const webSocketClient = this.config.getWebSocketClient();
+    const ws = new webSocketClient(this.config.url as string);
     ws.binaryType = 'arraybuffer';
 
     return ws;
@@ -156,12 +168,6 @@ export class SocketConnection {
   private cleanUpCurrentConnection() {
     this.stopPingPongGame();
     this.removeMessageListenerForWSInstance(this.ws);
-  }
-
-  private handleCloseEvent(ev: CloseEvent) {
-    if (this.isNotExplicitCloseReason(ev.reason)) {
-      this.tryReconnect();
-    }
   }
 
   private initPingPongGame() {

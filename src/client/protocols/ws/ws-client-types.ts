@@ -4,7 +4,7 @@ export interface ClientWSConfig extends ClientConfig {
   /**
    * Time in milliseconds of response to timeout.
    *
-   * @default 30000
+   * @default 10000
    */
   responseTimeout?: number;
 
@@ -19,7 +19,7 @@ export interface ClientWSConfig extends ClientConfig {
    * Time interval, in milliseconds, between reconnection attempts
    * in case of a connection down for non-explicit reason.
    *
-   * @default 30000
+   * @default 5000
    */
   reconnectionTryInterval?: number;
 
@@ -44,4 +44,13 @@ export interface ClientWSConfig extends ClientConfig {
    *  @default 10000
    */
   pingTimeout?: number;
+
+  /**
+   * Function that return a WebSocket client.
+   *
+   * @default globalThis.WebSocket
+   */
+  getWebSocketClient?: () => typeof WebSocket;
 }
+
+export type OnErrorHandler = (event: Event | Error) => void;
