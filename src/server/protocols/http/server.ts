@@ -30,34 +30,41 @@ export class ZHttpServer<
   }
 
   public async attach(httpServer: Server) {
-    httpServer.addListener('request', async (req, res) => {
-      try {
-        const procedurePathArr = (req.url as string).split(
-          this.config.baseUrl as string
-        );
+    httpServer.addListener('request', (req, res) =>
+      this.requestHandler(req, res)
+    );
+  }
 
-        procedurePathArr.shift();
+  private async requestHandler(
+    req: IncomingMessage,
+    res: ServerResponse<IncomingMessage>
+  ) {
+    try {
+      const procedurePathArr = (req.url as string).split(
+        this.config.baseUrl as string
+      );
 
-        const procedureName: string = procedurePathArr.join('/');
+      procedurePathArr.shift();
 
-        const handler = this.builder.get(procedureName);
+      const procedureName: string = procedurePathArr.join('/');
 
-        await this.runMiddlewares(req, res);
+      const handler = this.builder.get(procedureName);
 
-        const inputBuffer = await this.readBodyBuffer(req, procedureName);
+      await this.runMiddlewares(req, res);
 
-        const procedureData = this.api.proceduresDataParsers.get(procedureName);
-        const inputDecodedData = procedureData.input.decode(inputBuffer);
-        const context = new HttpContext(req, res, inputDecodedData);
+      const inputBuffer = await this.readBodyBuffer(req, procedureName);
 
-        const handlerResult = await handler.run(context);
-        const outputBuffer = procedureData.output.encode(handlerResult);
+      const procedureData = this.api.proceduresDataParsers.get(procedureName);
+      const inputDecodedData = procedureData.input.decode(inputBuffer);
+      const context = new HttpContext(req, res, inputDecodedData);
 
-        this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
-      } catch (e) {
-        this.dispatchError(res, e as Error);
-      }
-    });
+      const handlerResult = await handler.run(context);
+      const outputBuffer = procedureData.output.encode(handlerResult);
+
+      this.dispatch(res, HTTP_SUCCESS_STATUS_CODE, Buffer.from(outputBuffer));
+    } catch (e) {
+      this.dispatchError(res, e as Error);
+    }
   }
 
   protected async runMiddlewares(
@@ -133,6 +140,16 @@ export class ZHttpServer<
       req.on('data', onData);
       req.on('end', onEnd);
       req.on('error', onError);
+
+      if (req.complete) {
+        req.off('data', onData);
+        req.off('end', onEnd);
+        req.off('error', onError);
+
+        arr.push(req.read());
+        resolve(Buffer.concat(arr));
+        return;
+      }
     });
   }
 }
