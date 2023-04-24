@@ -12,8 +12,6 @@ import { ClientWSConfig, OnErrorHandler } from '../ws-client-types';
 
 export type SocketEventMessage = MessageEvent<ArrayBuffer>;
 
-const LATENCY_ASSUMPTION_MS = 1000;
-
 export enum LocalDisconnectionReasons {
   NetworkConnectionList = 'network-connection-lost',
   Destroyed = 'destroyed',
@@ -138,6 +136,7 @@ export class SocketConnection {
   }
 
   private connectionEstablished() {
+    this.isAlive = true;
     this.initPingPongGame();
     this.addMessageListenerForWSInstance(this.ws);
   }
@@ -215,7 +214,7 @@ export class SocketConnection {
     this.pingTimeoutId = setTimeout(() => {
       this.cleanUpCurrentConnection();
       this.tryReconnect();
-    }, (this.config.pingTimeout as number) + LATENCY_ASSUMPTION_MS);
+    }, this.config.pingTimeout as number);
   }
 
   private onPong() {

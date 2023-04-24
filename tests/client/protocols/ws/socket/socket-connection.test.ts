@@ -3,7 +3,16 @@
  */
 import ZRPC, { ZWSClient } from '../../../../../src';
 import { setTimeout } from 'timers/promises';
-import { LocalDisconnectionReasons } from '../../../../../src/client/protocols/ws/socket/socket-connection';
+import {
+  LocalDisconnectionReasons,
+  SocketEventMessage,
+} from '../../../../../src/client/protocols/ws/socket/socket-connection';
+import {
+  PONG_BUFFER,
+  SocketMessage,
+  SocketMessageSerializer,
+  SocketMessageType,
+} from '../../../../../src/core/protocols/socket-messages';
 
 describe('websocket-client-socket-connection', () => {
   const api = new ZRPC({
@@ -275,7 +284,7 @@ describe('websocket-client-socket-connection', () => {
     clearTimeout(connection.reconnectionTimeoutId);
   });
 
-  it('should call pings', async () => {
+  it('should call ping and receive pongs', async () => {
     const wscMock = getWebSocketClientMock();
 
     const zwsClient = new ZWSClient(api, {
@@ -290,18 +299,136 @@ describe('websocket-client-socket-connection', () => {
 
     const initPingPongGameSpy = jest.spyOn(connection, 'initPingPongGame');
     const stopPingPongGameSpy = jest.spyOn(connection, 'stopPingPongGame');
+    const onPongSpy = jest.spyOn(connection, 'onPong');
     const pingSpy = jest.spyOn(connection, 'ping');
 
     wscMock.eventsListeners.open[0]();
 
     expect(initPingPongGameSpy).toBeCalledTimes(1);
 
-    await setTimeout(40);
+    const messageEvent = new MessageEvent('', {
+      data: PONG_BUFFER,
+    });
+
+    wscMock.eventsListeners.message[0]?.(messageEvent);
+    wscMock.eventsListeners.message[0]?.(messageEvent);
+    wscMock.eventsListeners.message[0]?.(messageEvent);
+
+    await setTimeout(35);
 
     expect(pingSpy).toBeCalledTimes(3);
+    expect(onPongSpy).toBeCalledTimes(3);
 
     zwsClient.destroy();
 
     expect(stopPingPongGameSpy).toBeCalledTimes(1);
+  });
+
+  it('should try reconnect on ping timeout', async () => {
+    const wscMock = getWebSocketClientMock();
+
+    const zwsClient = new ZWSClient(api, {
+      pingInterval: 10,
+      pingTimeout: 5,
+      getWebSocketClient: () => {
+        return wscMock.webSocketClientMock as unknown as typeof WebSocket;
+      },
+    });
+
+    const onError = jest.fn((ev: Event | Error) => ev);
+    zwsClient.onError = onError;
+    const connection = (zwsClient as any).socket.connection;
+    const initPingPongGameSpy = jest.spyOn(connection, 'initPingPongGame');
+    const pingSpy = jest.spyOn(connection, 'ping');
+
+    const tryReconnectSpy = jest.spyOn(connection, 'tryReconnect');
+    const cleanUpCurrentConnectionSpy = jest.spyOn(
+      connection,
+      'cleanUpCurrentConnection'
+    );
+
+    wscMock.eventsListeners.open[0]();
+    expect(initPingPongGameSpy).toBeCalledTimes(1);
+
+    await setTimeout(20);
+    expect(pingSpy).toBeCalledTimes(1);
+
+    expect(tryReconnectSpy).toBeCalledTimes(1);
+    expect(cleanUpCurrentConnectionSpy).toBeCalledTimes(1);
+    expect(connection.pingTimeoutId).toBeDefined();
+
+    zwsClient.destroy();
+  });
+
+  it('should handle procedure message', async () => {
+    const wscMock = getWebSocketClientMock();
+
+    const zwsClient = new ZWSClient(api, {
+      pingInterval: 60000,
+      pingTimeout: 60000,
+      getWebSocketClient: () => {
+        return wscMock.webSocketClientMock as unknown as typeof WebSocket;
+      },
+    });
+
+    const connection = (zwsClient as any).socket.connection;
+
+    const procedureMessageHandler = jest.fn(
+      (message: SocketEventMessage) => message
+    );
+    connection.procedureMessageHandler = procedureMessageHandler;
+
+    wscMock.eventsListeners.open[0]();
+
+    const procedureMessage = SocketMessageSerializer.encode({
+      messageType: SocketMessageType.Call,
+      callId: 0,
+      procedureName: '',
+      dataBuffer: Buffer.from(''),
+    });
+
+    const messageEvent = new MessageEvent('', {
+      data: procedureMessage,
+    });
+
+    wscMock.eventsListeners.message[0](messageEvent);
+
+    expect(procedureMessageHandler).toBeCalledWith(messageEvent);
+
+    zwsClient.destroy();
+  });
+
+  it('should send socket message', async () => {
+    const wscMock = getWebSocketClientMock();
+
+    const zwsClient = new ZWSClient(api, {
+      pingInterval: 60000,
+      pingTimeout: 60000,
+      getWebSocketClient: () => {
+        return wscMock.webSocketClientMock as unknown as typeof WebSocket;
+      },
+    });
+
+    const connection = (zwsClient as any).socket.connection;
+    const sendOrQueueSpy = jest.spyOn(
+      (zwsClient as any).socket.connection,
+      'sendOrQueue'
+    );
+
+    wscMock.eventsListeners.open[0]();
+
+    const socketMessage: SocketMessage = {
+      messageType: SocketMessageType.Call,
+      callId: 0,
+      procedureName: '',
+      dataBuffer: Buffer.from(''),
+    };
+    const socketMessageBuffer = SocketMessageSerializer.encode(socketMessage);
+    connection.sendPacket(socketMessage);
+
+    expect(sendOrQueueSpy).toHaveBeenCalledWith(socketMessageBuffer);
+    expect(wscMock.send).toBeCalledWith(socketMessageBuffer);
+
+    zwsClient.destroy();
   });
 });
