@@ -17,7 +17,7 @@ export abstract class ZClientProtocolBase<
 > {
   protected abstract caller: ApiBuilderBase;
 
-  protected abstract def: ZAPI;
+  protected abstract api: ZAPI;
 
   protected abstract config?: Config;
 

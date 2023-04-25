@@ -15,13 +15,13 @@ export class ZHttpClient<ZAPI extends ZRPC> extends ZClientProtocolBase<
 
   protected config!: ClientHttpConfig;
 
-  constructor(protected def: ZAPI, config: ClientHttpConfig = {}) {
+  constructor(protected api: ZAPI, config: ClientHttpConfig = {}) {
     super();
     this.config = { ...config };
     this.config.url ||= this.getBaseUrl();
     this.config.fetchClient ||= getFetchClient();
 
-    this.caller = new HttpClientCallerBuilder(this.def, this.config);
+    this.caller = new HttpClientCallerBuilder(this.api, this.config);
   }
 
   private getBaseUrl(): BaseURL {

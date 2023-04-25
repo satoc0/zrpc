@@ -8,7 +8,7 @@ import {
   SocketMessageSerializer,
   SocketMessageType,
   isPingOrPongBufferMessage,
-} from '../../../core/protocols/socket-messages';
+} from '../../../core/protocols/socket-messages-serializer';
 import { ZRPC } from '../../../zrpc';
 import { SocketProcedureCaller } from './client-caller-builder';
 import { ClientCoordinator } from './client-coordinator';

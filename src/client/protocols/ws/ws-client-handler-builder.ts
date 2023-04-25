@@ -1,11 +1,11 @@
 import {
-  ProceduresTree,
   ProceduresSchemas,
+  ProceduresTree,
 } from '../../../core/api-definition';
 import { ApiBuilderBase } from '../../../core/builder/api-builder-base';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
-import { ZSocket } from './socket/socket';
+import { SocketMessages } from './socket/socket-messages';
 import { ClientWSConfig } from './ws-client-types';
 
 export type ApiBuilderMap<Root extends ProceduresTree = ProceduresTree> = {
@@ -25,7 +25,7 @@ export class WsClientHandlerBuilder<ZAPI extends ZRPC> extends ApiBuilderBase<
 > {
   constructor(
     protected api: ZAPI,
-    private socket: ZSocket,
+    private socketMessages: SocketMessages,
     private config: ClientWSConfig
   ) {
     super(api);
@@ -33,7 +33,7 @@ export class WsClientHandlerBuilder<ZAPI extends ZRPC> extends ApiBuilderBase<
 
   protected methodFactory(procedurePath: string): (input: any) => Promise<any> {
     return async (handler) => {
-      this.socket.messages.listen(procedurePath, handler);
+      this.socketMessages.listen(procedurePath, handler);
     };
   }
 }

@@ -1,6 +1,6 @@
 import {
-  ProceduresTree,
   ProceduresSchemas,
+  ProceduresTree,
 } from '../../../core/api-definition';
 import {
   ApiBuilderBase,
@@ -8,7 +8,7 @@ import {
 } from '../../../core/builder/api-builder-base';
 import { SchemaToType } from '../../../core/schema-types';
 import { ZRPC } from '../../../zrpc';
-import { ZSocket } from './socket/socket';
+import { SocketMessages } from './socket/socket-messages';
 import { ClientWSConfig } from './ws-client-types';
 
 export type ApiBuilderMap<Root extends ProceduresTree = ProceduresTree> = {
@@ -26,7 +26,7 @@ export class WsClientCallerBuilder<ZAPI extends ZRPC> extends ApiBuilderBase<
 > {
   constructor(
     protected api: ZAPI,
-    private socket: ZSocket,
+    private socketMessages: SocketMessages,
     private config: ClientWSConfig
   ) {
     super(api);
@@ -36,7 +36,7 @@ export class WsClientCallerBuilder<ZAPI extends ZRPC> extends ApiBuilderBase<
     procedurePath: string
   ): MethodBuilderReturn<any, Promise<any>> {
     return (input) => {
-      return this.socket.messages.callRemoteProcedure(procedurePath, input);
+      return this.socketMessages.callRemoteProcedure(procedurePath, input);
     };
   }
 }

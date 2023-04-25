@@ -9,7 +9,8 @@ import {
   DEFAULT_PING_TIMEOUT,
   DEFAULT_RESPONSE_TIMEOUT,
 } from './constants';
-import { ZSocket } from './socket/socket';
+import { SocketConnection } from './socket/socket-connection';
+import { SocketMessages } from './socket/socket-messages';
 import { WsClientCallerBuilder } from './ws-client-caller-builder';
 import { WsClientHandlerBuilder } from './ws-client-handler-builder';
 import { ClientWSConfig, OnErrorHandler } from './ws-client-types';
@@ -21,13 +22,15 @@ export class ZWSClient<
 
   protected handler: WsClientHandlerBuilder<ZAPI>;
 
-  public readonly socket!: ZSocket;
+  public readonly connection: SocketConnection;
+
+  public readonly messages: SocketMessages;
 
   set onError(cb: OnErrorHandler) {
-    this.socket.connection.onError = cb;
+    this.connection.onError = cb;
   }
 
-  constructor(protected def: ZAPI, protected config: ClientWSConfig = {}) {
+  constructor(protected api: ZAPI, protected config: ClientWSConfig = {}) {
     super();
 
     this.config.url ||= (window.location.origin + '/') as BaseURL;
@@ -38,13 +41,21 @@ export class ZWSClient<
     this.config.responseTimeout ??= DEFAULT_RESPONSE_TIMEOUT;
     this.config.reconnectionMaxAttemps ??= Infinity;
 
-    this.socket = new ZSocket(def, this.config as Required<ClientWSConfig>);
+    this.connection = new SocketConnection(
+      api,
+      this.config as Required<ClientWSConfig>
+    );
+    this.messages = new SocketMessages(api, config, this.connection);
 
-    this.caller = new WsClientCallerBuilder(this.def, this.socket, this.config);
+    this.caller = new WsClientCallerBuilder(
+      this.api,
+      this.messages,
+      this.config
+    );
 
     this.handler = new WsClientHandlerBuilder(
-      this.def,
-      this.socket,
+      this.api,
+      this.messages,
       this.config
     );
   }
@@ -62,6 +73,7 @@ export class ZWSClient<
   }
 
   public destroy() {
-    this.socket.destroy();
+    this.messages.destroy();
+    this.connection.destroy();
   }
 }

@@ -12,7 +12,7 @@ import {
   SocketMessage,
   SocketMessageSerializer,
   SocketMessageType,
-} from '../../../../../src/core/protocols/socket-messages';
+} from '../../../../../src/core/protocols/socket-messages-serializer';
 
 describe('websocket-client-socket-connection', () => {
   const api = new ZRPC({
@@ -110,10 +110,8 @@ describe('websocket-client-socket-connection', () => {
     expect(wscMock.eventsListeners.close.length).toBe(0);
     expect(wscMock.eventsListeners.message.length).toBe(1);
 
-    expect((zwsClient as any).socket.connection.ws).toBeDefined();
-    expect(
-      (zwsClient as any).socket.connection.pingsIntervalId
-    ).toBeGreaterThan(0);
+    expect((zwsClient as any).connection.ws).toBeDefined();
+    expect((zwsClient as any).connection.pingsIntervalId).toBeGreaterThan(0);
 
     zwsClient.destroy();
   });
@@ -127,7 +125,7 @@ describe('websocket-client-socket-connection', () => {
         return wscMock.webSocketClientMock as unknown as typeof WebSocket;
       },
     });
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const closeEv = new CloseEvent('unknown', {
       reason: 'network-error-mock',
@@ -155,7 +153,7 @@ describe('websocket-client-socket-connection', () => {
         return wscMock.webSocketClientMock as unknown as typeof WebSocket;
       },
     });
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const closeEv = new CloseEvent('unknown', {
       reason: LocalDisconnectionReasons.Destroyed,
@@ -188,7 +186,7 @@ describe('websocket-client-socket-connection', () => {
     const onError = jest.fn((ev: Event | Error) => ev);
     zwsClient.onError = onError;
 
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const anyEv = new Event('websocket');
 
@@ -209,7 +207,7 @@ describe('websocket-client-socket-connection', () => {
         return wscMock.webSocketClientMock as unknown as typeof WebSocket;
       },
     });
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const tryReconnectSpy = jest.spyOn(connection, 'tryReconnect');
 
@@ -237,7 +235,7 @@ describe('websocket-client-socket-connection', () => {
         return wscMock.webSocketClientMock as unknown as typeof WebSocket;
       },
     });
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const onReconnectSpy = jest.spyOn(connection, 'onReconnect');
 
@@ -268,7 +266,7 @@ describe('websocket-client-socket-connection', () => {
     });
     const onError = jest.fn((ev: Event | Error) => ev);
     zwsClient.onError = onError;
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const tryReconnectSpy = jest.spyOn(connection, 'tryReconnect');
 
@@ -295,7 +293,7 @@ describe('websocket-client-socket-connection', () => {
     });
     const onError = jest.fn((ev: Event | Error) => ev);
     zwsClient.onError = onError;
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const initPingPongGameSpy = jest.spyOn(connection, 'initPingPongGame');
     const stopPingPongGameSpy = jest.spyOn(connection, 'stopPingPongGame');
@@ -337,7 +335,7 @@ describe('websocket-client-socket-connection', () => {
 
     const onError = jest.fn((ev: Event | Error) => ev);
     zwsClient.onError = onError;
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
     const initPingPongGameSpy = jest.spyOn(connection, 'initPingPongGame');
     const pingSpy = jest.spyOn(connection, 'ping');
 
@@ -371,7 +369,7 @@ describe('websocket-client-socket-connection', () => {
       },
     });
 
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
 
     const procedureMessageHandler = jest.fn(
       (message: SocketEventMessage) => message
@@ -409,9 +407,9 @@ describe('websocket-client-socket-connection', () => {
       },
     });
 
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
     const sendOrQueueSpy = jest.spyOn(
-      (zwsClient as any).socket.connection,
+      (zwsClient as any).connection,
       'sendOrQueue'
     );
 
@@ -444,7 +442,7 @@ describe('websocket-client-socket-connection', () => {
       },
     });
 
-    const connection = (zwsClient as any).socket.connection;
+    const connection = (zwsClient as any).connection;
     const sendOrQueueSpy = jest.spyOn(connection, 'sendOrQueue');
     const queuePacketSpy = jest.spyOn(connection, 'enqueuePacket');
     const tryReconnectSpy = jest.spyOn(connection, 'tryReconnect');

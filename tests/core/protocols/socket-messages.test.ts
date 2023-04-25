@@ -2,7 +2,7 @@ import {
   SocketMessage,
   SocketMessageSerializer,
   SocketMessageType,
-} from '../../../src/core/protocols/socket-messages';
+} from '../../../src/core/protocols/socket-messages-serializer';
 
 describe('socket-messages', () => {
   it('should encode/decode correctly', () => {

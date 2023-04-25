@@ -3,7 +3,7 @@ import {
   SocketMessage,
   SocketMessageSerializer,
   SocketMessageType,
-} from '../../../../core/protocols/socket-messages';
+} from '../../../../core/protocols/socket-messages-serializer';
 import { ZRPC } from '../../../../zrpc';
 import { ClientWSConfig } from '../ws-client-types';
 import { SocketConnection, SocketEventMessage } from './socket-connection';

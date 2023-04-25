@@ -5,7 +5,7 @@ import {
   SocketMessage,
   SocketMessageSerializer,
   isPingOrPongBufferMessage,
-} from '../../../../core/protocols/socket-messages';
+} from '../../../../core/protocols/socket-messages-serializer';
 import { ZRPC } from '../../../../zrpc';
 import { ClientWSConfig, OnErrorHandler } from '../ws-client-types';
 
