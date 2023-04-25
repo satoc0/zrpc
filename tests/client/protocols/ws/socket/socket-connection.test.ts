@@ -431,4 +431,59 @@ describe('websocket-client-socket-connection', () => {
 
     zwsClient.destroy();
   });
+
+  it('should enqueue and send sockets after reconnection', async () => {
+    const wscMock = getWebSocketClientMock();
+
+    const zwsClient = new ZWSClient(api, {
+      pingInterval: 5,
+      pingTimeout: 2,
+      reconnectionTryInterval: 5,
+      getWebSocketClient: () => {
+        return wscMock.webSocketClientMock as unknown as typeof WebSocket;
+      },
+    });
+
+    const connection = (zwsClient as any).socket.connection;
+    const sendOrQueueSpy = jest.spyOn(connection, 'sendOrQueue');
+    const queuePacketSpy = jest.spyOn(connection, 'enqueuePacket');
+    const tryReconnectSpy = jest.spyOn(connection, 'tryReconnect');
+    const connectSpy = jest.spyOn(connection, 'connect');
+    wscMock.eventsListeners.open[0]();
+
+    await setTimeout(10);
+
+    expect(tryReconnectSpy).toBeCalledTimes(1);
+    const socketMessage: SocketMessage = {
+      messageType: SocketMessageType.Call,
+      callId: 0,
+      procedureName: '',
+      dataBuffer: Buffer.from(''),
+    };
+    const socketMessageBuffer = SocketMessageSerializer.encode(socketMessage);
+    connection.sendPacket(socketMessage);
+
+    expect([...connection.packetQueue.values()]).toEqual([socketMessageBuffer]);
+    expect(sendOrQueueSpy).toHaveBeenCalledWith(socketMessageBuffer);
+    expect(queuePacketSpy).toBeCalledWith(socketMessageBuffer);
+
+    await setTimeout(15);
+
+    expect(connectSpy).toBeCalledTimes(1);
+    connection.config = {
+      ...connection.config,
+      pingInterval: 30000,
+      pingTimeout: 30000,
+    };
+
+    const onReconnectSpy = jest.spyOn(connection, 'onReconnect');
+    const sendQueuedPacketsSpy = jest.spyOn(connection, 'sendQueuedPackets');
+
+    wscMock.eventsListeners.open[0]();
+
+    expect(onReconnectSpy).toBeCalledTimes(1);
+    expect(sendQueuedPacketsSpy).toBeCalledTimes(1);
+
+    zwsClient.destroy();
+  });
 });

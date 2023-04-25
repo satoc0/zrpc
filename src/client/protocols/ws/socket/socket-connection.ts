@@ -96,12 +96,14 @@ export class SocketConnection {
 
       clearInitializeEvents();
 
-      if (this.ws) {
-        this.onReconnect();
-      }
+      const isReconnect = !!this.ws;
 
       this.ws = wsInstance;
       this.connectionEstablished();
+
+      if (isReconnect) {
+        this.onReconnect();
+      }
     };
 
     const clearInitializeEvents = () => {
@@ -192,20 +194,13 @@ export class SocketConnection {
 
   private onMessage = (message: SocketEventMessage) => {
     switch (isPingOrPongBufferMessage(message.data)) {
-      case PingPongMessage.Ping:
-        this.sendPong();
-        break;
       case PingPongMessage.Pong:
         this.onPong();
         break;
-      default:
+      case false:
         this.procedureMessageHandler(message);
     }
   };
-
-  private sendPong() {
-    this.ws.send(PONG_BUFFER);
-  }
 
   public ping() {
     this.ws.send(PING_BUFFER);
@@ -232,11 +227,11 @@ export class SocketConnection {
     if (this.isAlive) {
       this.ws.send(buffer);
     } else {
-      this.queuePacket(buffer);
+      this.enqueuePacket(buffer);
     }
   }
 
-  private queuePacket(buffer: Uint8Array) {
+  private enqueuePacket(buffer: Uint8Array) {
     this.packetQueue.add(buffer);
   }
 
