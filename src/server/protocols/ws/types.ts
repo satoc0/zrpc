@@ -11,8 +11,8 @@ export type WebSocketServerConfig = ServerConfig<
 
 export interface ProcedureWaitingCallback {
   expireAt: number;
-  resolve: WeakRef<(input: object) => void>;
-  reject: WeakRef<(error: Error) => void>;
+  resolve: ((input: object) => void) | undefined;
+  reject: ((error: Error) => void) | undefined;
 }
 
 export type ClientId = string;

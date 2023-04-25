@@ -1,6 +1,6 @@
 import { CallId, ClientId, ReponseCallbackKey } from './types';
 
-export function getResponseCallbackKey(
+export function getCallbackKey(
   clientId: ClientId,
   callId: CallId
 ): ReponseCallbackKey {

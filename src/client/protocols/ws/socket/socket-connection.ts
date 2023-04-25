@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   PING_BUFFER,
-  PONG_BUFFER,
   PingPongMessage,
   SocketMessage,
   SocketMessageSerializer,

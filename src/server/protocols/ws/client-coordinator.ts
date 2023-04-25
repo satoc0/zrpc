@@ -93,8 +93,11 @@ export class ClientCoordinator<ZAPI extends ZRPC> {
       const [clientId] = separateCallbackKey(callbackKey);
 
       if (clientId === this.clientId) {
-        callback.resolve.deref();
-        callback.reject.deref()?.(new Error('Client destroyed'));
+        callback.reject?.(new Error('Client destroyed'));
+
+        callback.resolve = undefined;
+        callback.reject = undefined;
+
         this.proceduresCallbacksMap.delete(callbackKey);
       }
     }

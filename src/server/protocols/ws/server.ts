@@ -69,7 +69,7 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
     });
 
     this.initPingPongGame();
-    this.initRejectCallsTimeouts();
+    this.initRejectCallbacksTimeout();
   }
 
   private getClientCoordinator(clientId: string) {
@@ -101,13 +101,18 @@ export class ZWSServer<ZAPI extends ZRPC> extends ZServerProtocolBase {
     );
   }
 
-  private initRejectCallsTimeouts() {
+  private initRejectCallbacksTimeout() {
     this.rejectCallbacksTimeoutIntervalId = setInterval(
       (callbacks) => {
         const now = Date.now();
-        for (const [, callback] of callbacks) {
+        for (const [callbackKey, callback] of callbacks) {
           if (callback.expireAt < now) {
-            callback.reject.deref()?.(new Error('Response timeout'));
+            callback.reject?.(new Error('Response timeout'));
+
+            callback.resolve = undefined;
+            callback.reject = undefined;
+
+            this.proceduresCallbacksMap.delete(callbackKey);
           }
         }
       },
