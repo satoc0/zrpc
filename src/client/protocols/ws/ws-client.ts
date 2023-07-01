@@ -28,6 +28,7 @@ export class ZWSClient<
 
   set onError(cb: OnErrorHandler) {
     this.connection.onError = cb;
+    this.messages.onError = cb;
   }
 
   constructor(protected api: ZAPI, protected config: ClientWSConfig = {}) {

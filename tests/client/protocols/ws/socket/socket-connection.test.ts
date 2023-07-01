@@ -5,7 +5,7 @@ import ZRPC, { ZWSClient } from '../../../../../src';
 import { setTimeout } from 'timers/promises';
 import {
   LocalDisconnectionReasons,
-  SocketEventMessage,
+  MessageEventArrayBuffer,
 } from '../../../../../src/client/protocols/ws/socket/socket-connection';
 import {
   PONG_BUFFER,
@@ -372,7 +372,7 @@ describe('websocket-client-socket-connection', () => {
     const connection = (zwsClient as any).connection;
 
     const procedureMessageHandler = jest.fn(
-      (message: SocketEventMessage) => message
+      (message: MessageEventArrayBuffer) => message
     );
     connection.procedureMessageHandler = procedureMessageHandler;
 

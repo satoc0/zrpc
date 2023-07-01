@@ -1,12 +1,18 @@
 import { AcceptPromise } from '../../../../core';
 import {
+  CallTimeoutError,
+  CallbackHandlerNotFoundError,
+  ProcedureNotFoundError,
+  ZError,
+} from '../../../../core/core-errors';
+import {
   SocketMessage,
   SocketMessageSerializer,
   SocketMessageType,
 } from '../../../../core/protocols/socket-messages-serializer';
 import { ZRPC } from '../../../../zrpc';
-import { ClientWSConfig } from '../ws-client-types';
-import { SocketConnection, SocketEventMessage } from './socket-connection';
+import { ClientWSConfig, OnErrorHandler } from '../ws-client-types';
+import { SocketConnection, MessageEventArrayBuffer } from './socket-connection';
 
 export type SubscriptionHandler = (input: object) => AcceptPromise<object>;
 export type ResponseCallback = {
@@ -24,6 +30,8 @@ export class SocketMessages {
 
   private callbacks: Map<number, ResponseCallback> = new Map();
 
+  onError!: OnErrorHandler;
+
   constructor(
     protected api: ZRPC,
     protected config: ClientWSConfig,
@@ -33,19 +41,27 @@ export class SocketMessages {
   }
 
   private init() {
-    this.connection.procedureMessageHandler = (message: SocketEventMessage) => {
+    this.connection.procedureMessageHandler = (
+      message: MessageEventArrayBuffer
+    ) => {
       this.handleMessage(message);
     };
   }
 
-  private handleMessage(message: SocketEventMessage) {
+  private handleMessage(message: MessageEventArrayBuffer) {
     const buffer = Buffer.from(message.data);
     const packet = SocketMessageSerializer.decode(buffer);
 
-    if (packet.messageType === SocketMessageType.Call) {
-      this.callHandler(packet);
-    } else {
-      this.executeCallback(packet);
+    switch (packet.messageType) {
+      case SocketMessageType.Call:
+        this.callHandler(packet);
+        break;
+      case SocketMessageType.Callback:
+        this.executeCallback(packet);
+        break;
+      case SocketMessageType.CallbackError:
+        this.executeCallbackError(packet);
+        break;
     }
   }
 
@@ -53,33 +69,63 @@ export class SocketMessages {
     const handler = this.proceduresHandlers.get(packet.procedureName);
 
     if (!handler) {
+      const procedureNotFound = new ProcedureNotFoundError(
+        packet.procedureName
+      );
+      this.connection.sendPacket({
+        ...packet,
+        messageType: SocketMessageType.CallbackError,
+        dataBuffer: procedureNotFound.getResponseBuffer(),
+      });
       return;
     }
 
-    const dataParsers = this.api.proceduresDataParsers.get(
-      packet.procedureName
-    );
+    try {
+      const dataParsers = this.api.proceduresDataParsers.get(
+        packet.procedureName
+      );
 
-    const inputData = dataParsers.input.decode(Buffer.from(packet.dataBuffer));
+      const inputData = dataParsers.input.decode(
+        Buffer.from(packet.dataBuffer)
+      );
 
-    const callResponse = await handler(inputData);
+      const callResponse = await handler(inputData);
 
-    const responseBuffer = dataParsers.output.encode(callResponse);
+      const responseBuffer = dataParsers.output.encode(callResponse);
 
-    this.connection.sendPacket({
-      ...packet,
-      messageType: SocketMessageType.Callback,
-      dataBuffer: responseBuffer,
-    });
+      this.connection.sendPacket({
+        ...packet,
+        messageType: SocketMessageType.Callback,
+        dataBuffer: responseBuffer,
+      });
+    } catch (error) {
+      packet.messageType = SocketMessageType.CallbackError;
+      const responsePacket: Partial<SocketMessage> = {
+        ...packet,
+        messageType: SocketMessageType.CallbackError,
+      };
+
+      if (error instanceof ZError) {
+        responsePacket.dataBuffer = error.getResponseBuffer();
+      } else if (error instanceof Error) {
+        const zError = new ZError({
+          errorCode: '',
+          message: error.message,
+          procedureName: packet.procedureName,
+        });
+
+        responsePacket.dataBuffer = zError.getResponseBuffer();
+      }
+
+      this.connection.sendPacket(responsePacket as SocketMessage);
+    }
   }
 
   private executeCallback(message: SocketMessage) {
-    const callback = this.callbacks.get(message.callId);
+    const callback = this.getCallbackHandler(message);
 
     if (!callback) {
-      throw new Error(
-        `Call response handler not found, procedure: ${message.procedureName}, call id: ${message.callId}`
-      );
+      return;
     }
 
     try {
@@ -91,12 +137,54 @@ export class SocketMessages {
         Buffer.from(message.dataBuffer)
       );
 
-      callback.resolve(outputData);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      callback!.resolve(outputData);
     } catch (err) {
-      callback.reject(err as Error);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      callback!.reject(err as Error);
     } finally {
       this.callbacks.delete(message.callId);
     }
+  }
+
+  private getCallbackHandler(
+    message: SocketMessage
+  ): ResponseCallback | undefined {
+    const callback = this.callbacks.get(message.callId);
+
+    if (!callback) {
+      const error = new CallbackHandlerNotFoundError(
+        message.procedureName,
+        message.callId
+      );
+
+      if (this.onError) {
+        this.onError(error);
+      } else {
+        console.error(error);
+      }
+
+      return;
+    }
+
+    return callback;
+  }
+
+  private executeCallbackError(message: SocketMessage) {
+    const callback = this.getCallbackHandler(message);
+
+    if (!callback) {
+      return;
+    }
+
+    const error = ZError.factoryFromBuffer(message.dataBuffer);
+    callback.reject(error);
+
+    this.deleteProcedureCallback(message);
+  }
+
+  private deleteProcedureCallback(message: SocketMessage) {
+    this.callbacks.delete(message.callId);
   }
 
   public listen(
@@ -117,14 +205,13 @@ export class SocketMessages {
       const callId = this.getCallId();
 
       const timeoutId = setTimeout(
-        (procedure: string, cid: number) => {
-          reject(
-            new Error(`Call timeout, procedure: ${procedure}, call id: ${cid}`)
-          );
+        (procedure: string, cid: number, rejectRef: (reason?: any) => void) => {
+          rejectRef(new CallTimeoutError(procedure, cid));
         },
         this.config.responseTimeout,
         procedureName,
-        callId
+        callId,
+        reject
       );
 
       this.callbacks.set(callId, { resolve, reject, timeoutId });

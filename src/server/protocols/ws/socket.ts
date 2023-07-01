@@ -160,7 +160,6 @@ export class SocketHandler<ZAPI extends ZRPC> {
 
         this.sendCallback(procedureMessage, error.getResponseBuffer());
       }
-      // TODO emitt error
     }
   }
 

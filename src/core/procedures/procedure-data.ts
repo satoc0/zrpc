@@ -6,9 +6,9 @@ import {
   SchemaDefinition,
 } from '../api-definition';
 import {
-  InvalidSchemaData,
+  InvalidSchemaDataError,
   ParserDataError,
-  ProcedureParserNotFound,
+  ProcedureParserNotFoundError,
 } from '../core-errors';
 import { protobufProcedureTypeBuilder } from '../message-type-builder';
 import {
@@ -26,7 +26,7 @@ export function encodeByClassSchema<
   const validationError = schema.verify(data as unknown as object);
 
   if (validationError !== null) {
-    throw new InvalidSchemaData(validationError);
+    throw new InvalidSchemaDataError(validationError);
   }
 
   const inputSchemaMessage = schema.fromObject(inputData);
@@ -231,7 +231,7 @@ export class ZProceduresSerialization {
     const item = this.map.get(name);
 
     if (!item) {
-      throw new ProcedureParserNotFound(name);
+      throw new ProcedureParserNotFoundError(name);
     }
 
     return item;

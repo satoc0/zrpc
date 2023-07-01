@@ -1,5 +1,5 @@
 import { ApiBuilderBase } from '../core/builder/api-builder-base';
-import { ProcedureNotFound } from '../core/core-errors';
+import { ProcedureNotFoundError } from '../core/core-errors';
 import { ZRPC } from '../zrpc';
 import {
   ProcedureExecutor,
@@ -29,7 +29,7 @@ export class ServerApiBuilder<
     const handler = this.handlers.get(procedurePath);
 
     if (!handler) {
-      throw new ProcedureNotFound(procedurePath);
+      throw new ProcedureNotFoundError(procedurePath);
     }
 
     return handler;

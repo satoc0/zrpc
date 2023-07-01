@@ -7,7 +7,7 @@ import {
 } from 'node:http';
 import { Socket } from 'node:net';
 import ZRPC, { ZHttpServer } from '../../../../src';
-import { ProcedureNotFound } from '../../../../src/core/core-errors';
+import { ProcedureNotFoundError } from '../../../../src/core/core-errors';
 import { HttpServerConfig } from '../../../../src/server/protocols/http/types';
 import { BodyReadError } from '../../../../src/server/protocols/http/errors';
 
@@ -87,7 +87,7 @@ describe('server', () => {
       'get'
     );
 
-    const expectedError = new ProcedureNotFound('nonExistent');
+    const expectedError = new ProcedureNotFoundError('nonExistent');
 
     httpServer.emit('request', mockReq, serverResponse);
 

@@ -61,7 +61,7 @@ export class ZError extends Error {
   }
 }
 
-export class InvalidSchemaData extends ZError {
+export class InvalidSchemaDataError extends ZError {
   constructor(public readonly procedureName: string) {
     super({
       errorCode: 'invalid-schema',
@@ -88,7 +88,7 @@ export class ParserDataError extends ZError {
   }
 }
 
-export class ProcedureParserNotFound extends ZError {
+export class ProcedureParserNotFoundError extends ZError {
   constructor(public readonly procedureName: string) {
     super({
       errorCode: 'parser-not-found',
@@ -98,7 +98,7 @@ export class ProcedureParserNotFound extends ZError {
   }
 }
 
-export class ProcedureNotFound extends ZError {
+export class ProcedureNotFoundError extends ZError {
   constructor(public readonly procedureName: string) {
     super({
       errorCode: 'procedure-not-found',
@@ -108,7 +108,27 @@ export class ProcedureNotFound extends ZError {
   }
 }
 
-export class BiDirectionalNotEnabled extends Error {
+export class CallbackHandlerNotFoundError extends ZError {
+  constructor(public readonly procedureName: string, callId: number) {
+    super({
+      errorCode: 'callback-not-found',
+      message: `Callback for procedure "${procedureName}" not found, callId: ${callId}`,
+      procedureName,
+    });
+  }
+}
+
+export class CallTimeoutError extends ZError {
+  constructor(public readonly procedureName: string, callId: number) {
+    super({
+      errorCode: 'call-timeout',
+      message: `Call timeout for procedure "${procedureName}", callId: ${callId}`,
+      procedureName,
+    });
+  }
+}
+
+export class BiDirectionalNotEnabledError extends Error {
   constructor() {
     super(
       'Your API configuration does not have bidirectional communication enabled.'

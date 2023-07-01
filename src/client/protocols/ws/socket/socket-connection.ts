@@ -9,10 +9,10 @@ import {
 import { ZRPC } from '../../../../zrpc';
 import { ClientWSConfig, OnErrorHandler } from '../ws-client-types';
 
-export type SocketEventMessage = MessageEvent<ArrayBuffer>;
+export type MessageEventArrayBuffer = MessageEvent<ArrayBuffer>;
 
 export enum LocalDisconnectionReasons {
-  NetworkConnectionList = 'network-connection-lost',
+  NetworkConnectionLost = 'network-connection-lost',
   Destroyed = 'destroyed',
 }
 
@@ -37,7 +37,7 @@ export class SocketConnection {
 
   onError!: OnErrorHandler;
 
-  procedureMessageHandler!: (message: SocketEventMessage) => void;
+  procedureMessageHandler!: (message: MessageEventArrayBuffer) => void;
 
   constructor(protected api: ZRPC, protected config: Required<ClientWSConfig>) {
     this.connect();
@@ -57,7 +57,7 @@ export class SocketConnection {
   private onNetworkOffline = () => {
     this.isAlive = false;
     this.cleanUpCurrentConnection();
-    this.ws.close(0, LocalDisconnectionReasons.NetworkConnectionList);
+    this.ws.close(0, LocalDisconnectionReasons.NetworkConnectionLost);
   };
 
   private onNetworkOnline = () => {
@@ -191,7 +191,7 @@ export class SocketConnection {
     ws.removeEventListener('message', this.onMessage);
   }
 
-  private onMessage = (message: SocketEventMessage) => {
+  private onMessage = (message: MessageEventArrayBuffer) => {
     switch (isPingOrPongBufferMessage(message.data)) {
       case PingPongMessage.Pong:
         this.onPong();
