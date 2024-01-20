@@ -62,7 +62,7 @@ export const { api, zHttpServer } = createServer();
 export const port = (zHttpServer.address() as AddressInfo).port;
 
 export const zrpcHttpClient = new ZHttpClient(api, {
-  url: `http://localhost:${port}`,
+  url: `http://localhost:${port}/`,
   requestBuilder: () => {
     return {
       headers: [['Connection', 'close']],
