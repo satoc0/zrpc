@@ -13,6 +13,7 @@ import {
 import { ZRPC } from '../../../../zrpc';
 import { ClientWSConfig, OnErrorHandler } from '../ws-client-types';
 import { SocketConnection, MessageEventArrayBuffer } from './socket-connection';
+import { Buffer } from 'buffer';
 
 export type SubscriptionHandler = (input: object) => AcceptPromise<object>;
 export type ResponseCallback = {
