@@ -137,6 +137,8 @@ export class SocketMessages {
         Buffer.from(message.dataBuffer)
       );
 
+      clearTimeout(callback.timeoutId);
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       callback!.resolve(outputData);
     } catch (err) {
