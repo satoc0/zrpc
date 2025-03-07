@@ -172,8 +172,6 @@ export class SocketConnection {
 
   private initPingPongGame() {
     this.pingsIntervalId = setInterval(() => {
-      this.isAlive = false;
-
       this.ping();
     }, this.config.pingInterval);
   }
@@ -202,8 +200,8 @@ export class SocketConnection {
   };
 
   public ping() {
-    this.ws.send(PING_BUFFER);
     this.isAlive = false;
+    this.ws.send(PING_BUFFER);
 
     this.pingTimeoutId = setTimeout(() => {
       this.cleanUpCurrentConnection();

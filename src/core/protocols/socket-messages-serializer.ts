@@ -59,7 +59,7 @@ function uint8Buffer(num: number): Uint8Array {
  * ```
  */
 export class SocketMessageSerializer {
-  static encode(message: SocketMessage): Uint8Array {
+  static encode(message: SocketMessage): Buffer {
     const { messageType, procedureName, dataBuffer } = message;
     const typeByte = MessageTypeBuffers[messageType];
 
@@ -79,7 +79,7 @@ export class SocketMessageSerializer {
       typeByte,
       callIdByte,
       procedureBytesLengthByte,
-      procedureNameBuffer,
+      procedureNameBuffer as any,
       dataBuffer,
     ]);
   }
@@ -88,15 +88,17 @@ export class SocketMessageSerializer {
     const messageType = buffer.at(0) as number;
     const callId = buffer.at(1) as number;
     const procedureNameLength = buffer.at(2) as number;
+    const procedureNameOffsetEnd =
+      PACKET_METADATA_BYTES_LENGTH + procedureNameLength;
 
     const procedureNameBuffer = buffer.subarray(
       PACKET_METADATA_BYTES_LENGTH,
-      PACKET_METADATA_BYTES_LENGTH + procedureNameLength
+      procedureNameOffsetEnd
     );
     const procedureName = procedureNameBuffer.toString();
 
     const dataBuffer = buffer.subarray(
-      procedureNameLength + PACKET_METADATA_BYTES_LENGTH,
+      procedureNameOffsetEnd,
       buffer.byteLength
     );
 
